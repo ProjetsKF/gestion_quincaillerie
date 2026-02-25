@@ -2,7 +2,7 @@
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
     <!-- Brand -->
-   <a href="../index.php" 
+   <a href="/gestion_quincaillerie/dashboard.php" 
    class="sidebar-brand" 
    style="padding:0 !important; height:auto !important; min-height:unset !important;">
 
