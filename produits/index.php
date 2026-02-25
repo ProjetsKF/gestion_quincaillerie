@@ -1,3 +1,57 @@
+
+<?php
+//session_start();
+require_once '../bd/database.php';
+
+/* Sécurité : recruteur uniquement 
+if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
+    header('Location: ../login.php');
+    exit;
+}
+
+*/
+
+$message = '';
+$message_type = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $designP  = trim($_POST['designP']);
+    $caractProduit = trim($_POST['caractProduit']);
+
+    if ($designP && $caractProduit ) {
+
+        $sql = "INSERT INTO produit
+                (designP, caractProduit)
+                VALUES
+                (:designP, :caractProduit)";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':designP'          => $designP,
+            ':caractProduit'    => $caractProduit           
+        ]);
+
+        $message = "Produit enregistré avec succès.";
+        $message_type = 'success';
+
+    } else {
+        $message = "Tous les champs sont obligatoires.";
+        $message_type = 'Erreur';
+    }
+}
+
+$sql = "SELECT * FROM produit LIMIT 5";
+
+
+$res= $pdo->prepare($sql);
+$res->execute([
+]);
+
+$prod = $res->fetchAll();
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -90,6 +144,7 @@
 
             <!-- Tableau -->
             <div class="table-responsive">
+                <?php if (count($prod) > 0) : ?>
                 <table class="table table-hover align-items-center">
                     <thead class="thead-light">
                         <tr>
@@ -101,10 +156,11 @@
                     </thead>
 
                     <tbody>
+                        <?php foreach ($prod as $pr) : ?>
                         <tr>
-                            <td>PR001</td>
-                            <td>Clou 3 pouces</td>
-                            <td>Acier galvanisé</td>
+                            <td><?= htmlspecialchars($pr['idprod']) ?></td>
+                            <td><?= htmlspecialchars($pr['designP']) ?></td>
+                            <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
                             <td class="text-center">
                                 <a href="#" class="text-primary mr-3">
                                     <i class="fas fa-edit"></i>
@@ -114,23 +170,11 @@
                                 </a>
                             </td>
                         </tr>
-
-                        <tr>
-                            <td>PR002</td>
-                            <td>Ciment 50kg</td>
-                            <td>Portland</td>
-                            <td class="text-center">
-                                <a href="#" class="text-primary mr-3">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="#" class="text-danger">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
+                        <?php endforeach; ?>
 
                     </tbody>
                 </table>
+                <?php endif; ?>
             </div>
 
         </div>
@@ -196,12 +240,27 @@
             </div>
 
             <div class="modal-body">
+                <?php if (!empty($message)) : ?>
+                    <div class="card-panel
+                        <?= $message_type === 'error' ? 'red lighten-4' : 'green lighten-4' ?>">
+                        <span class="
+                            <?= $message_type === 'error'
+                                ? 'red-text text-darken-4'
+                                : 'green-text text-darken-4' ?>">
+                            <i class="material-icons left">
+                                <?= $message_type === 'error' ? 'error' : 'check_circle' ?>
+                            </i>
+                            <?= htmlspecialchars($message) ?>
+                        </span>
+                    </div>
+                <?php endif; ?>
+                
 
-                <form>
+                <form method="post">
 
                     <div class="form-group">
                         <label>Désignation *</label>
-                        <input type="text" class="form-control"
+                        <input type="text" class="form-control" name="designP" 
                                placeholder="Ex: Clou 3 pouces">
                     </div>
 
@@ -209,26 +268,28 @@
                         <label>Caractéristiques</label>
                         <textarea class="form-control"
                                   rows="3"
-                                  placeholder="Ex: Acier galvanisé, 3 pouces"></textarea>
+                                  placeholder="Ex: Acier galvanisé, 3 pouces" name="caractProduit"></textarea>
+                    </div>
+
+                    <div class="modal-footer border-0">
+
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Ajouter
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-secondary"
+                                data-dismiss="modal">
+                            Annuler
+                        </button>
+
                     </div>
 
                 </form>
 
             </div>
 
-            <div class="modal-footer border-0">
-
-                <button type="button" class="btn btn-success">
-                    <i class="fas fa-save"></i> Ajouter
-                </button>
-
-                <button type="button"
-                        class="btn btn-secondary"
-                        data-dismiss="modal">
-                    Annuler
-                </button>
-
-            </div>
+            
 
         </div>
     </div>
