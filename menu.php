@@ -62,6 +62,9 @@
             <a class="collapse-item" href="paiements/index.php">
                 <i class="fas fa-file-invoice-dollar mr-2"></i> Facturation
             </a>
+            <a class="collapse-item" href="/gestion_quincaillerie/clients/index.php">
+                 <i class="fas fa-user-friends"></i> Clients
+            </a>
 
         </div>
     </div>
@@ -120,12 +123,7 @@
             <span>Utilisateurs</span>
         </a>
     </li>
-    <li class="nav-item">
-    <a class="nav-link" href="/gestion_quincaillerie/clients/index.php">
-        <i class="fas fa-user-friends"></i>
-        <span>Clients</span>
-    </a>
-</li>
+    
      <li class="nav-item">
     <a class="nav-link" href="/gestion_quincaillerie/produits/index.php">
         <i class="fas fa-boxes"></i>
