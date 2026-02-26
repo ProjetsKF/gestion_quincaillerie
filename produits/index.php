@@ -18,7 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $designP  = trim($_POST['designP']);
     $caractProduit = trim($_POST['caractProduit']);
+<<<<<<< HEAD
     
+=======
+>>>>>>> 75fe9dea2d7b0b2bd7d918a41dce42045b8bf1f1
 
     if ($designP && $caractProduit ) {
 
@@ -42,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+<<<<<<< HEAD
 
 
 
@@ -75,6 +79,16 @@ $motCle='NULL';
     */
 
      //include('recherche.php');
+=======
+$sql = "SELECT * FROM produit LIMIT 5";
+
+
+$res= $pdo->prepare($sql);
+$res->execute([
+]);
+
+$prod = $res->fetchAll();
+>>>>>>> 75fe9dea2d7b0b2bd7d918a41dce42045b8bf1f1
 
 ?>
 
@@ -201,6 +215,10 @@ $motCle='NULL';
                             </td>
                         </tr>
                         <?php endforeach; ?>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 75fe9dea2d7b0b2bd7d918a41dce42045b8bf1f1
                     </tbody>
                 </table>
                 <?php endif; ?>
@@ -285,7 +303,11 @@ $motCle='NULL';
                 <?php endif; ?>
                 
 
+<<<<<<< HEAD
                 <form method="post" action="create.php">
+=======
+                <form method="post">
+>>>>>>> 75fe9dea2d7b0b2bd7d918a41dce42045b8bf1f1
 
                     <div class="form-group">
                         <label>Désignation *</label>
