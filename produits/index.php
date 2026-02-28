@@ -1,4 +1,3 @@
-
 <?php
 //session_start();
 require_once '../bd/database.php';
@@ -8,7 +7,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
     header('Location: ../login.php');
     exit;
 }
-
 */
 
 $message = '';
@@ -18,12 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $designP  = trim($_POST['designP']);
     $caractProduit = trim($_POST['caractProduit']);
-<<<<<<< HEAD
-    
-=======
->>>>>>> 75fe9dea2d7b0b2bd7d918a41dce42045b8bf1f1
 
-    if ($designP && $caractProduit ) {
+    if ($designP && $caractProduit) {
 
         $sql = "INSERT INTO produit
                 (designP, caractProduit)
@@ -32,8 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            ':designP'          => $designP,
-            ':caractProduit'    => $caractProduit           
+            ':designP'       => $designP,
+            ':caractProduit' => $caractProduit
         ]);
 
         $message = "Produit enregistré avec succès.";
@@ -41,56 +35,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } else {
         $message = "Tous les champs sont obligatoires.";
-        $message_type = 'Erreur';
+        $message_type = 'error';
     }
 }
 
-<<<<<<< HEAD
 
-
-
+/* ===============================
+   AFFICHAGE DES PRODUITS
+================================= */
 
 $sql = "SELECT * FROM produit LIMIT 5";
 
-//$sqlRech = "SELECT * FROM produit WHERE designP like '%+:rech+%' LIMIT 5";
-
-
-//$txtRech=trim($_POST['txtRech']);
-$res= $pdo->prepare($sql);
-//$resRe= $pdo->prepare($sqlRech);
-$res->execute([
-]);
-
-//$resRe->execute([
-//   ':rech' => $txtRech
-//]);
+$res = $pdo->prepare($sql);
+$res->execute();
 
 $prod = $res->fetchAll();
-//$prodRec = $resRe->fetchAll();
-
-/*
-$motCle='NULL'; 
-    if(isset($_POST['btnRecherche'])) {
-        $motCle=htmlspecialchars($_POST['txtRech']);
-    }
-    $req=$pdo->prepare("select *from Produit where designP like '%$motCle%' or caractProduit like '%$motCle%'");
-    $req->execute(array($motCle,$motCle));
-
-    */
-
-     //include('recherche.php');
-=======
-$sql = "SELECT * FROM produit LIMIT 5";
-
-
-$res= $pdo->prepare($sql);
-$res->execute([
-]);
-
-$prod = $res->fetchAll();
->>>>>>> 75fe9dea2d7b0b2bd7d918a41dce42045b8bf1f1
 
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -215,10 +177,7 @@ $prod = $res->fetchAll();
                             </td>
                         </tr>
                         <?php endforeach; ?>
-<<<<<<< HEAD
-=======
 
->>>>>>> 75fe9dea2d7b0b2bd7d918a41dce42045b8bf1f1
                     </tbody>
                 </table>
                 <?php endif; ?>
@@ -303,11 +262,10 @@ $prod = $res->fetchAll();
                 <?php endif; ?>
                 
 
-<<<<<<< HEAD
+
                 <form method="post" action="create.php">
-=======
+
                 <form method="post">
->>>>>>> 75fe9dea2d7b0b2bd7d918a41dce42045b8bf1f1
 
                     <div class="form-group">
                         <label>Désignation *</label>

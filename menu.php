@@ -37,7 +37,7 @@
                 <i class="fas fa-industry mr-2"></i> Fournisseurs
             </a>
 
-            <a class="collapse-item" href="approvisionnements/index.php">
+            <a class="collapse-item" href="/gestion_quincaillerie/approvisionnement/index.php">
                 <i class="fas fa-warehouse mr-2"></i> Stockage
             </a>
 

@@ -3,18 +3,22 @@ require_once '../bd/database.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    $id        = intval($_POST['id']);
     $nom       = trim($_POST['nom']);
     $postnom   = trim($_POST['postnom']);
     $pren      = trim($_POST['pren']);
     $denomSoc  = trim($_POST['denomSoc']);
     $tel       = trim($_POST['tel']);
 
-    if ($nom && $tel) {
+    if ($id && $nom && $tel) {
 
-        $sql = "INSERT INTO fournisseur
-                (nom, postnom, pren, denomSoc, tel)
-                VALUES
-                (:nom, :postnom, :pren, :denomSoc, :tel)";
+        $sql = "UPDATE fournisseur SET
+                nom = :nom,
+                postnom = :postnom,
+                pren = :pren,
+                denomSoc = :denomSoc,
+                tel = :tel
+                WHERE id = :id";
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
@@ -22,16 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':postnom'  => $postnom,
             ':pren'     => $pren,
             ':denomSoc' => $denomSoc,
-            ':tel'      => $tel
+            ':tel'      => $tel,
+            ':id'       => $id
         ]);
 
-        // Redirection vers index avec message
-        header("Location: index.php?success=1");
-        exit;
-
-    } else {
-
-        header("Location: index.php?error=1");
+        header("Location: index.php?update=1");
         exit;
     }
 }

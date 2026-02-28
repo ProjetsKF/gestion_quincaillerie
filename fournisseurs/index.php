@@ -1,3 +1,84 @@
+<?php
+require_once '../bd/database.php';
+
+/* ===============================
+   PARAMÈTRES PAGINATION
+================================= */
+
+$limit = 5; // Nombre d’éléments par page
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$page = $page < 1 ? 1 : $page;
+$start = ($page - 1) * $limit;
+
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+/* ===============================
+   COMPTER LE TOTAL
+================================= */
+
+if (!empty($search)) {
+
+    $countSql = "SELECT COUNT(*) FROM fournisseur
+                 WHERE nom LIKE :search
+                 OR postnom LIKE :search
+                 OR pren LIKE :search
+                 OR denomSoc LIKE :search
+                 OR tel LIKE :search";
+
+    $stmtCount = $pdo->prepare($countSql);
+    $stmtCount->execute([':search' => "%$search%"]);
+
+} else {
+
+    $countSql = "SELECT COUNT(*) FROM fournisseur";
+    $stmtCount = $pdo->prepare($countSql);
+    $stmtCount->execute();
+}
+
+$totalRecords = $stmtCount->fetchColumn();
+$totalPages = ceil($totalRecords / $limit);
+
+/* ===============================
+   RÉCUPÉRER DONNÉES PAGINÉES
+================================= */
+
+if (!empty($search)) {
+
+    $sql = "SELECT * FROM fournisseur
+            WHERE nom LIKE :search
+            OR postnom LIKE :search
+            OR pren LIKE :search
+            OR denomSoc LIKE :search
+            OR tel LIKE :search
+            ORDER BY id DESC
+            LIMIT :start, :limit";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
+    $stmt->bindValue(':start', $start, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+
+} else {
+
+    $sql = "SELECT * FROM fournisseur
+            ORDER BY id DESC
+            LIMIT :start, :limit";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':start', $start, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+}
+
+$fournisseurs = $stmt->fetchAll();
+
+/* Calcul affichage */
+$showingFrom = $totalRecords > 0 ? $start + 1 : 0;
+$showingTo = min($start + $limit, $totalRecords);
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -49,6 +130,21 @@
                 <!-- Begin Page Content -->
 <div class="container-fluid">
 
+    <!-- MESSAGES -->
+
+    <?php if (isset($_GET['delete'])): ?>
+        <div class="alert alert-success">
+            Fournisseur supprimé avec succès.
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['error']) && $_GET['error'] == 'used'): ?>
+        <div class="alert alert-danger">
+            Impossible de supprimer : fournisseur déjà utilisé.
+        </div>
+    <?php endif; ?>
+
+
     <!-- Retour -->
     <div class="mb-3">
         <a href="../dashboard.php" class="text-secondary">
@@ -60,33 +156,51 @@
     <div class="card shadow mb-4">
 
         <!-- Header -->
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">
-                Gestion des Fournisseurs
-            </h6>
+       <div class="card-header py-3 d-flex justify-content-between align-items-center">
 
-            <button class="btn btn-primary btn-sm"
-        data-toggle="modal"
-        data-target="#fournisseurModal">
-    <i class="fas fa-plus"></i> Nouveau Fournisseur
-</button>
-        </div>
+    <h6 class="m-0 font-weight-bold text-primary">
+        Gestion des Fournisseurs
+    </h6>
+
+    <div>
+
+        <!-- Bouton Actualiser -->
+        <a href="index.php" class="btn btn-secondary btn-sm mr-2">
+            <i class="fas fa-sync-alt"></i> Actualiser
+        </a>
+
+        <!-- Bouton Nouveau Fournisseur -->
+        <button class="btn btn-primary btn-sm"
+                data-toggle="modal"
+                data-target="#fournisseurModal">
+            <i class="fas fa-plus"></i> Nouveau Fournisseur
+        </button>
+
+    </div>
+
+</div>
 
         <!-- Body -->
         <div class="card-body">
 
-            <!-- Barre de recherche -->
-            <div class="mb-4">
-                <div class="input-group">
-                    <input type="text" class="form-control"
-                           placeholder="Rechercher par nom, société ou téléphone...">
-                    <div class="input-group-append">
-                        <button class="btn btn-primary">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </div>
+           <!-- Barre de recherche -->
+<div class="mb-4">
+    <form method="GET">
+        <div class="input-group">
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   placeholder="Rechercher par nom, société ou téléphone..."
+                   value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+
+            <div class="input-group-append">
+                <button class="btn btn-primary" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
             </div>
+        </div>
+    </form>
+</div>
 
             <!-- Tableau -->
             <div class="table-responsive">
@@ -102,53 +216,187 @@
                     </thead>
 
                     <tbody>
-                        <tr>
-                            <td>FR001</td>
-                            <td>KASONGO BANZA Patrick</td>
-                            <td>BISIKOMASH SARL</td>
-                            <td><i class="fas fa-phone mr-1 text-muted"></i> 0994123456</td>
-                            <td class="text-center">
-                                <a href="#" class="text-primary mr-3">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="#" class="text-danger">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
 
-                        <tr>
-                            <td>FR002</td>
-                            <td>MUTOMBO Alain</td>
-                            <td>Lubumbashi Commerce</td>
-                            <td><i class="fas fa-phone mr-1 text-muted"></i> 0823456789</td>
-                            <td class="text-center">
-                                <a href="#" class="text-primary mr-3">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="#" class="text-danger">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
+<?php if (count($fournisseurs) > 0): ?>
 
-                        <tr>
-                            <td>FR003</td>
-                            <td>ILUNGA Pierre</td>
-                            <td>Matériel Industriel RDC</td>
-                            <td><i class="fas fa-phone mr-1 text-muted"></i> 0812345678</td>
-                            <td class="text-center">
-                                <a href="#" class="text-primary mr-3">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="#" class="text-danger">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
+    <?php foreach ($fournisseurs as $f): ?>
+        <tr>
+            <td><?php echo $f['id']; ?></td>
 
-                    </tbody>
+            <td>
+                <i class="fas fa-user mr-1 text-muted"></i>
+                <?php 
+                echo htmlspecialchars(
+                    $f['nom'] . ' ' . 
+                    $f['postnom'] . ' ' . 
+                    $f['pren']
+                ); 
+                ?>
+            </td>
+
+            <td>
+                <i class="fas fa-building mr-1 text-muted"></i>
+                <?php echo htmlspecialchars($f['denomSoc']); ?>
+            </td>
+
+            <td>
+                <i class="fas fa-phone mr-1 text-muted"></i>
+                <?php echo htmlspecialchars($f['tel']); ?>
+            </td>
+
+            <td class="text-center">
+                <a href="#" 
+                   class="text-primary mr-3"
+                   data-toggle="modal"
+                   data-target="#editModal<?php echo $f['id']; ?>">
+                    <i class="fas fa-edit"></i>
+                </a>
+
+                <a href="delete.php?id=<?php echo $f['id']; ?>"
+                   class="text-danger"
+                   onclick="return confirm('Voulez-vous vraiment supprimer ce fournisseur ?');">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </td>
+        </tr>
+
+        <!-- Modal Modifier Fournisseur -->
+<div class="modal fade" id="editModal<?php echo $f['id']; ?>" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg rounded">
+
+            <div class="modal-header border-0">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-edit text-primary"></i>
+                    Modifier Fournisseur
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <form method="POST" action="update.php">
+
+                <input type="hidden" name="id" value="<?php echo $f['id']; ?>">
+
+                <div class="modal-body">
+
+                    <div class="form-group">
+                        <label>Nom *</label>
+                        <input type="text" name="nom"
+                               class="form-control"
+                               value="<?php echo htmlspecialchars($f['nom']); ?>"
+                               required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Postnom</label>
+                        <input type="text" name="postnom"
+                               class="form-control"
+                               value="<?php echo htmlspecialchars($f['postnom']); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Prénom</label>
+                        <input type="text" name="pren"
+                               class="form-control"
+                               value="<?php echo htmlspecialchars($f['pren']); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Dénomination Sociale</label>
+                        <input type="text" name="denomSoc"
+                               class="form-control"
+                               value="<?php echo htmlspecialchars($f['denomSoc']); ?>">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Téléphone *</label>
+                        <input type="text" name="tel"
+                               class="form-control"
+                               value="<?php echo htmlspecialchars($f['tel']); ?>"
+                               required>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0">
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Mettre à jour
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-dismiss="modal">
+                        Annuler
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+    <?php endforeach; ?>
+
+<?php else: ?>
+
+    <tr>
+        <td colspan="5" class="text-center text-muted">
+            Aucun fournisseur enregistré.
+        </td>
+    </tr>
+
+<?php endif; ?>
+
+</tbody>
                 </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+
+    <!-- Texte gauche -->
+   <div class="text-muted" style="font-size: 0.95rem;">
+        Affichage de <?php echo $showingFrom; ?> 
+        à <?php echo $showingTo; ?> 
+        sur <?php echo $totalRecords; ?> fournisseur(s)
+    </div>
+    <!-- Pagination droite -->
+    <nav>
+        <ul class="pagination mb-0">
+
+            <!-- Previous -->
+            <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
+                <a class="page-link"
+                   href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>">
+                    Previous
+                </a>
+            </li>
+
+            <!-- Numéros -->
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <li class="page-item <?php echo ($i == $page) ? 'active' : ''; ?>">
+                    <a class="page-link"
+                       href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>">
+                        <?php echo $i; ?>
+                    </a>
+                </li>
+            <?php endfor; ?>
+
+            <!-- Next -->
+            <li class="page-item <?php echo ($page >= $totalPages) ? 'disabled' : ''; ?>">
+                <a class="page-link"
+                   href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>">
+                    Next
+                </a>
+            </li>
+
+        </ul>
+    </nav>
+
+</div>
             </div>
 
         </div>
@@ -199,7 +447,15 @@
     </div>
 
 
-    <!-- Modal Ajout Fournisseur -->
+
+<?php if (isset($_GET['update'])): ?>
+    <div class="alert alert-success">
+        Fournisseur modifié avec succès.
+    </div>
+<?php endif; ?>
+
+
+  <!-- Modal Ajout Fournisseur -->
 <div class="modal fade" id="fournisseurModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg rounded">
@@ -214,61 +470,55 @@
                 </button>
             </div>
 
-            <div class="modal-body">
+            <form method="POST" action="create.php"> 
 
-                <form>
+                <div class="modal-body">
 
                     <div class="form-group">
                         <label>Nom *</label>
-                        <input type="text" class="form-control"
-                               placeholder="Ex: KASONGO">
+                        <input type="text" name="nom" class="form-control" required>
                     </div>
 
                     <div class="form-group">
                         <label>Postnom</label>
-                        <input type="text" class="form-control"
-                               placeholder="Ex: BANZA">
+                        <input type="text" name="postnom" class="form-control">
                     </div>
 
                     <div class="form-group">
                         <label>Prénom</label>
-                        <input type="text" class="form-control"
-                               placeholder="Ex: Patrick">
+                        <input type="text" name="pren" class="form-control">
                     </div>
 
                     <div class="form-group">
                         <label>Dénomination Sociale</label>
-                        <input type="text" class="form-control"
-                               placeholder="Ex: BISIKOMASH SARL">
+                        <input type="text" name="denomSoc" class="form-control">
                     </div>
 
                     <div class="form-group">
                         <label>Téléphone</label>
-                        <input type="text" class="form-control"
-                               placeholder="Ex: 0994123456">
+                        <input type="text" name="tel" class="form-control" required>
                     </div>
 
-                </form>
+                </div>
 
-            </div>
+                <div class="modal-footer border-0">
 
-            <div class="modal-footer border-0">
+                    <button type="submit" name="btnFournisseur" class="btn btn-success">
+                        <i class="fas fa-save"></i> Ajouter
+                    </button>
 
-                <button type="button" class="btn btn-success">
-                    <i class="fas fa-save"></i> Ajouter
-                </button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        Annuler
+                    </button>
 
-                <button type="button"
-                        class="btn btn-secondary"
-                        data-dismiss="modal">
-                    Annuler
-                </button>
+                </div>
 
-            </div>
+            </form> 
 
         </div>
     </div>
 </div>
+
 
    <script src="../vendor/jquery/jquery.min.js"></script>
 <script src="../vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
