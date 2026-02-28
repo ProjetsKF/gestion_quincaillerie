@@ -55,7 +55,7 @@
     <div id="collapseVente" class="collapse" data-parent="#accordionSidebar">
         <div class="bg-white py-2 collapse-inner rounded">
 
-            <a class="collapse-item" href="commandes/index.php">
+            <a class="collapse-item" href="/gestion_quincaillerie/commandes/index.php">
                 <i class="fas fa-shopping-cart mr-2"></i> Commande
             </a>
 
