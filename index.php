@@ -1,3 +1,74 @@
+<?php
+session_start();
+require_once 'bd/database.php';
+
+$message = '';
+$message_type = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $email   = isset($_POST['email']) ? trim($_POST['email']) : '';
+    $motpass = isset($_POST['motpass']) ? $_POST['motpass'] : '';
+
+    if (!empty($email) && !empty($motpass)) {
+
+        $sql = "SELECT * FROM utilisateur WHERE email = :email LIMIT 1";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':email' => $email
+        ]);
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user) {
+
+            /* Vérification du mot de passe */
+            if (password_verify($motpass, $user['motPass'])) {
+
+                /* Vérifier si le compte est actif */
+                if ($user['statut'] !== 'En attente') {
+
+                    $_SESSION['user_id'] = $user['idutil'];
+                    $_SESSION['nom'] = $user['nom'];
+                    $_SESSION['prenom'] = $user['prenom'];
+                    $_SESSION['email'] = $user['email'];
+                    $_SESSION['role'] = $user['rol'];
+                    $_SESSION['idsuc'] = $user['idSuc'];
+
+                    header("Location: dashboard.php");
+                    exit;
+
+                } else {
+
+                    $message = "Votre compte est en attente de validation.";
+                    $message_type = "error";
+
+                }
+
+            } else {
+
+                $message = "Mot de passe incorrect.";
+                $message_type = "error";
+
+            }
+
+        } else {
+
+            $message = "Adresse email introuvable.";
+            $message_type = "error";
+
+        }
+
+    } else {
+
+        $message = "Veuillez remplir tous les champs.";
+        $message_type = "error";
+
+    }
+
+}
+?>
+
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -64,19 +135,41 @@
                                             Content de te revoir !
                                         </h1>
                                     </div>
+                                    <?php if (!empty($message)) : ?>
 
-                                    <form>
+                                    <div class="alert <?php echo $message_type === 'error' ? 'alert-danger' : 'alert-success'; ?>">
+
+                                    <?php echo htmlspecialchars($message); ?>
+
+                                    </div>
+
+                                    <?php endif; ?>
+                                <form method="POST">
 
                                         <div class="form-group">
-                                            <input type="email"
+                                            <input type="email" name="email"
                                                 class="form-control form-control-user"
                                                 placeholder="Saisissez votre adresse e-mail...">
                                         </div>
 
-                                        <div class="form-group">
-                                            <input type="password"
-                                                class="form-control form-control-user"
-                                                placeholder="Mot de passe">
+                                       <div class="form-group" style="position:relative;">
+
+                                                    <input type="password"
+                                                           name="motpass"
+                                                           id="motpass"
+                                                           class="form-control form-control-user"
+                                                           placeholder="Mot de passe">
+
+                                                    <i class="fas fa-eye"
+                                                       onclick="togglePassword()"
+                                                       style="position:absolute;
+                                                              right:15px;
+                                                              top:50%;
+                                                              transform:translateY(-50%);
+                                                              cursor:pointer;
+                                                              color:#6c757d;">
+                                                    </i>
+
                                         </div>
 
                                         <div class="form-group">
@@ -91,10 +184,10 @@
                                             </div>
                                         </div>
 
-                                        <a href="dashboard.php"
-                                            class="btn btn-primary btn-user btn-block">
-                                            Login
-                                        </a>
+                                        <button type="submit"
+                                        class="btn btn-primary btn-user btn-block">
+                                        Se connecter
+                                        </button>
 
                                         <hr>
 
@@ -145,6 +238,21 @@
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
     <script src="js/sb-admin-2.min.js"></script>
+    <script>
+
+function togglePassword() {
+
+    var input = document.getElementById("motpass");
+
+    if (input.type === "password") {
+        input.type = "text";
+    } else {
+        input.type = "password";
+    }
+
+}
+
+</script>
 
 </body>
 

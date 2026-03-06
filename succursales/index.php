@@ -1,4 +1,13 @@
 <?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit;
+}
+?>
+
+<?php
 require_once '../bd/database.php';
 
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';

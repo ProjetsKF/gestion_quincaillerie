@@ -4,86 +4,82 @@ require_once 'bd/database.php';
 $message = '';
 $message_type = '';
 
-/* Vérifier si le formulaire est soumis */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // 1. Récupération et nettoyage des données
-    $nom = trim($_POST['nom'] );
-    $postnom  = trim($_POST['postnom'] );
-    $prenom  = trim($_POST['prenom'] );
-    $email      = trim($_POST['email'] );
-    $motpass   = $_POST['motpass'] ;
-    $conf   = $_POST['conf'] ;
-    $idsuc   = $_POST['idsuc'] ;
-    //$role_id    = isset($_POST['role_id']) ? (int) $_POST['role_id'] : 0;
+    /* Récupération des données */
 
-    // 2. Vérification des champs obligatoires
-    if ($nom && $postnom &&$prenom &&  $email && $motpass && $conf) {
+    $nom     = isset($_POST['nom']) ? trim($_POST['nom']) : '';
+    $postnom = isset($_POST['postnom']) ? trim($_POST['postnom']) : '';
+    $prenom  = isset($_POST['prenom']) ? trim($_POST['prenom']) : '';
+    $email   = isset($_POST['email']) ? trim($_POST['email']) : '';
+    $motpass = isset($_POST['motpass']) ? $_POST['motpass'] : '';
+    $conf    = isset($_POST['conf']) ? $_POST['conf'] : '';
+    $idsuc   = isset($_POST['idsuc']) ? $_POST['idsuc'] : '';
 
-        // 3. Vérifier si l'email existe déjà
-        $checkSql = "SELECT idutil FROM Utilisateur WHERE email = :email LIMIT 1";
+    /* Vérification */
+
+    if ($nom && $postnom && $prenom && $email && $motpass && $conf && $idsuc) {
+
+        $checkSql = "SELECT idutil FROM utilisateur WHERE email = :email LIMIT 1";
         $checkStmt = $pdo->prepare($checkSql);
-        $checkStmt->execute([
+        $checkStmt->execute(array(
             ':email' => $email
-        ]);
+        ));
 
         if ($checkStmt->fetch()) {
 
             $message = "Cet email est déjà utilisé.";
-            $message_type = 'Erreur';
+            $message_type = "error";
 
         } 
-        elseif ($motpass!=$conf) {
-            $message = "Les deux mots de passe ne sont pas identiques.";
-            $message_type = 'Erreur';
-        }
+        elseif ($motpass != $conf) {
 
+            $message = "Les mots de passe ne correspondent pas.";
+            $message_type = "error";
+
+        } 
         else {
 
-            // 4. Hash du mot de passe
-            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $password_hash = password_hash($motpass, PASSWORD_DEFAULT);
 
-            // 5. Insertion dans users
-            $sql = "INSERT INTO Utilisateur
-                    (nom, postnom, prenom, email, motpass, idSuc)
+            $sql = "INSERT INTO utilisateur
+                    (email, motPass, rol, idSuc, nom, postnom, prenom)
                     VALUES
-                    (:nom, :postnom, :prenom, :email, :motpass,(SELECT idSuc FROM Succursale WHERE nomSuc=:idSuc) )";
+                    (:email, :motpass, :rol, :idsuc, :nom, :postnom, :prenom)";
 
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([
-                ':nom'    => $nom,
-                ':postnom' => $postnom,
-                ':prenom'  => $prenom,
-                ':email'      => $email,
-                ':motpass'   => $password_hash,
-                ':idSuc'     => $idsuc
-            ]);
 
-            // 6. Récupérer l’ID de l’utilisateur créé
-            /*$user_id = $pdo->lastInsertId();
-            }*/
+            $stmt->execute(array(
+                ':email'   => $email,
+                ':motpass' => $password_hash,
+                ':rol'     => 0,
+                ':idsuc'   => $idsuc,
+                ':nom'     => $nom,
+                ':postnom' => $postnom,
+                ':prenom'  => $prenom
+            ));
 
             $message = "Utilisateur créé avec succès.";
-            $message_type = 'success';
+            $message_type = "success";
         }
 
-    }
-     else {
+    } 
+    else {
+
         $message = "Veuillez remplir tous les champs.";
-        $message_type = 'error';
+        $message_type = "error";
+
     }
 }
 
-/* ===============================
-   POUR CHARGEMENT LISTE DEROULANTE SUCCURSALE
-================================= */
+/* Charger les succursales */
 
-$req = "SELECT * FROM Succursale ";
+$sql = "SELECT idsuc, nomSuc FROM succursale ORDER BY nomSuc";
 
-$res = $pdo->prepare($req);
-$res->execute();
+$stmt = $pdo->prepare($sql);
+$stmt->execute();
 
-$suc = $res->fetchAll();
+$suc = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 
@@ -154,20 +150,17 @@ $suc = $res->fetchAll();
 
                             <form method="post">
                                 <?php if (!empty($message)) : ?>
-                                    <div class="card-panel 
-                                        <?= $message_type === 'error' ? 'red lighten-4' : 'green lighten-4' ?>">
-                                        
-                                        <span class="
-                                            <?= $message_type === 'error' 
-                                                ? 'red-text text-darken-4' 
-                                                : 'green-text text-darken-4' ?>">
-                                            
-                                            <i class="material-icons left">
-                                                <?= $message_type === 'error' ? 'error' : 'check_circle' ?>
-                                            </i>
-                                            <?= htmlspecialchars($message) ?>
-                                        </span>
-                                    </div>
+
+                                        <div class="alert <?php echo $message_type === 'error' ? 'alert-danger' : 'alert-success'; ?> alert-dismissible fade show" role="alert">
+
+                                            <?php echo htmlspecialchars($message); ?>
+
+                                            <button type="button" class="close" data-dismiss="alert">
+                                                <span>&times;</span>
+                                            </button>
+
+                                        </div>
+
                                 <?php endif; ?>
 
                                 <div class="form-group row">
@@ -195,22 +188,48 @@ $suc = $res->fetchAll();
                                 </div>
 
                                 <div class="form-group row">
-                                    <div class="col-sm-6 mb-3 mb-sm-0">
+                                    <div class="col-sm-6 mb-3 mb-sm-0" style="position:relative;">
+
                                         <input type="password"
-                                            class="form-control form-control-user" name="motpass" 
-                                            placeholder="Mot de passe">
-                                    </div>
-                                    <div class="col-sm-6 mb-3 mb-sm-0">
-                                        <input type="password" name="conf" 
-                                            class="form-control form-control-user"
-                                            placeholder="Confirmer mot de passe">
-                                    </div>
+                                               class="form-control form-control-user"
+                                               name="motpass"
+                                               id="motpass"
+                                               placeholder="Mot de passe">
+
+                                        <i class="fas fa-eye"
+                                           onclick="togglePassword('motpass', this)"
+                                           style="position:absolute; right:15px; top:50%; transform:translateY(-50%); cursor:pointer; color:#6c757d;">
+                                        </i>
+
+                                        </div>
+
+
+                                        <div class="col-sm-6 mb-3 mb-sm-0" style="position:relative;">
+
+                                        <input type="password"
+                                               class="form-control form-control-user"
+                                               name="conf"
+                                               id="conf"
+                                               placeholder="Confirmer mot de passe">
+
+                                        <i class="fas fa-eye"
+                                           onclick="togglePassword('conf', this)"
+                                           style="position:absolute; right:15px; top:50%; transform:translateY(-50%); cursor:pointer; color:#6c757d;">
+                                        </i>
+
+                                        </div>
                                     <div class="col-sm-12 mt-3">
                                         
                                         <select class="form-control form-control-user" name="idsuc">
-                                            <?php foreach ($suc as $su) : ?>
-                                            <option><?= htmlspecialchars($su['nomSuc']) ?></option>  
-                                            <?php endforeach; ?>                                          
+
+                                                <?php foreach ($suc as $su): ?>
+
+                                                <option value="<?= $su['idsuc'] ?>">
+                                                    <?= htmlspecialchars($su['nomSuc']) ?>
+                                                </option>
+
+                                                <?php endforeach; ?>
+
                                         </select>
                                         
                                         
@@ -266,6 +285,27 @@ $suc = $res->fetchAll();
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
     <script src="js/sb-admin-2.min.js"></script>
+
+    <script>
+
+function togglePassword(fieldId, icon) {
+
+    const input = document.getElementById(fieldId);
+
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash");
+    } 
+    else {
+        input.type = "password";
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
+    }
+
+}
+
+</script>
 
 </body>
 
