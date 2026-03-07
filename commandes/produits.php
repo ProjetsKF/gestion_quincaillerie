@@ -2,11 +2,11 @@
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
-    $_SESSION['idsuc'] = $user['idSuc'];
     header("Location: index.php");
     exit;
 }
 ?>
+
 <?php
 //session_start();
 require_once '../bd/database.php';
@@ -16,7 +16,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
     header('Location: ../login.php');
     exit;
 }
-
 */
 
 $message = '';
@@ -24,27 +23,20 @@ $message_type = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $nom  = trim($_POST['nom']);
-    $postnom = trim($_POST['postnom']);
-    $prenom = trim($_POST['prenom']);
-    $raisSoc = trim($_POST['raisSoc']);
-    $tel = trim($_POST['tel']);
-    
+    $designP  = trim($_POST['designP']);
+    $caractProduit = trim($_POST['caractProduit']);
 
-    if ($nom && $postnom && $prenom && $raisSoc && $tel   ) {
+    if ($designP && $caractProduit) {
 
-        $sql = "INSERT INTO Client
-                (nom, postnom, prenom, raisSoc, tel)
+        $sql = "INSERT INTO produit
+                (designP, caractProduit)
                 VALUES
-                (:nom, :postnom, :prenom, :raisSoc, :tel)";
+                (:designP, :caractProduit)";
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            ':nom'       => $nom,
-            ':postnom'   => $postnom,
-            ':prenom'    => $prenom,
-            ':raisSoc'   => $raisSoc,
-            ':tel'       => $tel           
+            ':designP'       => $designP,
+            ':caractProduit' => $caractProduit
         ]);
 
         $message = "Produit enregistré avec succès.";
@@ -52,20 +44,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } else {
         $message = "Tous les champs sont obligatoires.";
-        $message_type = 'Erreur';
+        $message_type = 'error';
     }
 }
 
 
-$sql = "SELECT * FROM Client LIMIT 5";
+/* ===============================
+   AFFICHAGE DES PRODUITS
+================================= */
 
-$res= $pdo->prepare($sql);
-$res->execute([
-]);
+$sql = "SELECT * FROM produit LIMIT 5";
 
-$clt = $res->fetchAll();
+$res = $pdo->prepare($sql);
+$res->execute();
+
+$prod = $res->fetchAll();
 
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -77,7 +74,7 @@ $clt = $res->fetchAll();
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>BISIKOMASH - Clients</title>
+    <title>BISIKOMASH - Produits</title>
 
     <!-- Custom fonts for this template-->
 <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
@@ -119,7 +116,7 @@ $clt = $res->fetchAll();
 
     <!-- Retour -->
     <div class="mb-3">
-        <a href="/gestion_quincaillerie/index.php" class="text-secondary">
+        <a href="../dashboard.php" class="text-secondary">
             <i class="fas fa-arrow-left"></i> Retour au tableau de bord
         </a>
     </div>
@@ -130,65 +127,68 @@ $clt = $res->fetchAll();
         <!-- Header -->
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">
-                Nos Clients
+               Sélectionner produit commandé
             </h6>
 
+<!-- Bouton Actualiser -->
+       
             <button class="btn btn-primary btn-sm"
                     data-toggle="modal"
-                    data-target="#clientModal">
-                <i class="fas fa-plus"></i> Nouveau Client
+                    data-target="#produitModal">
+                <i class="fas fa-plus"></i> Nouveau Produit
             </button>
         </div>
 
         <!-- Body -->
         <div class="card-body">
-
-            <!-- Recherche -->
-            <div class="mb-4">
-                <div class="input-group">
-                    <input type="text" class="form-control"
-                           placeholder="Rechercher par nom, société ou téléphone...">
-                    <div class="input-group-append">
-                        <button class="btn btn-primary">
-                            <i class="fas fa-search"></i>
-                        </button>
+            <form method="post" action="recherche.php?idclt=<?= $_GET['idclt'] ?>&idcmd=<?= $_GET['idcmd'] ?>">
+                <div class="mb-4">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="txtRech" 
+                               placeholder="Rechercher un produit...">
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-primary" name="btnRecherche">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+                
+            </form>
+
+            <!-- Barre de recherche -->
+            
 
             <!-- Tableau -->
-            <?php if (count($clt) > 0) : ?>
             <div class="table-responsive">
+                <?php if (count($prod) > 0) : ?>
                 <table class="table table-hover align-items-center">
                     <thead class="thead-light">
                         <tr>
                             <th>ID</th>
-                            <th>Nom Complet</th>
-                            <th>Raison Sociale</th>
-                            <th>Téléphone</th>
+                            <th>Désignation</th>
+                            <th>Caractéristiques</th>
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        <?php foreach ($clt as $cl) : ?>
+                        <?php foreach ($prod as $pr) : ?>
                         <tr>
-                            <td><?= htmlspecialchars($cl['idclt']) ?></td>
-                            <td><?= htmlspecialchars($cl['nom'].' '.$cl['postnom'].' '.$cl['prenom']) ?></td>
-                            <td><?= htmlspecialchars($cl['raisSoc']) ?></td>
-                            <td><i class="fas fa-phone mr-1 text-muted"></i> <?= htmlspecialchars($cl['tel']) ?></td>
+                            <td><?= htmlspecialchars($pr['idprod']) ?></td>
+                            <td><?= htmlspecialchars($pr['designP']) ?></td>
+                            <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
                             <td class="text-center">
-                                 <a href="../commandes/commande.php?idclt=<?=$cl['nom'].' '.$cl['postnom'].' '.$cl['prenom'] ?>" class="text-primary mr-3">
+
+                                
+                                <a href="../commandes/creationCmdeDet.php?idclt=<?= $_GET['idclt'] ?>&idcmd=<?= $_GET['idcmd'] ?>&prod=<?= $pr['designP'].' '.$pr['caractProduit'] ?>" class="btn-edit"   
+                                        >
                                     <i class="fas fa-shopping-cart mr-2"></i>
                                 </a>
-                                <a href="#" class="text-primary mr-3">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="#" class="text-danger">
-                                    <i class="fas fa-trash"></i>
-                                </a>
+                                
                             </td>
                         </tr>
+
                         <?php endforeach; ?>
 
                     </tbody>
@@ -201,7 +201,6 @@ $clt = $res->fetchAll();
 
 </div>
 <!-- /.container-fluid -->
-
             </div>
             <!-- End of Main Content -->
 
@@ -244,15 +243,17 @@ $clt = $res->fetchAll();
     </div>
 
 
- <!-- Modal Ajout Client -->
-<div class="modal fade" id="clientModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+  <!-- Modal Ajout Produit -->
+
+
+<div class="modal fade" id="produitModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg rounded">
 
             <div class="modal-header border-0">
                 <h5 class="modal-title font-weight-bold">
-                    <i class="fas fa-user text-primary"></i>
-                    Nouveau Client
+                    <i class="fas fa-shopping-cart mr-2"></i>
+                    Détails commande
                 </h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
@@ -260,37 +261,62 @@ $clt = $res->fetchAll();
             </div>
 
             <div class="modal-body">
+                <?php if (!empty($message)) : ?>
+                    <div class="card-panel
+                        <?= $message_type === 'error' ? 'red lighten-4' : 'green lighten-4' ?>">
+                        <span class="
+                            <?= $message_type === 'error'
+                                ? 'red-text text-darken-4'
+                                : 'green-text text-darken-4' ?>">
+                            <i class="material-icons left">
+                                <?= $message_type === 'error' ? 'error' : 'check_circle' ?>
+                            </i>
+                            <?= htmlspecialchars($message) ?>
+                        </span>
+                    </div>
+                <?php endif; ?>
+                
+
+
+                <form method="post" action="#">
 
                 <form method="post">
 
                     <div class="form-group">
-                        <label>Nom *</label>
-                        <input type="text" class="form-control" name="nom" 
-                               placeholder="Ex: KASONGO">
+                        <label>Quantité *</label>
+                        <input type="text" class="form-control" name="designP" 
+                               placeholder="Ex: Clou 3 pouces">
                     </div>
 
-                    <div class="form-group">
-                        <label>Postnom</label>
-                        <input type="text" class="form-control" name="postnom" 
-                               placeholder="Ex: BANZA">
+                     <div class="form-group">
+                        <label>Unité de mésure *</label>
+                        <input type="text" class="form-control" name="designP" value="" 
+                               placeholder="Ex: Clou 3 pouces">
                     </div>
 
-                    <div class="form-group">
-                        <label>Prénom</label>
-                        <input type="text" class="form-control" name="prenom" 
-                               placeholder="Ex: Patrick">
+
+                     <div class="form-group">
+                        <label>Produit *</label>
+                        <input type="text"  class="form-control" id="targetInput" 
+                               placeholder="Ex: Clou 3 pouces">
+                               <script>
+                                    $(document).ready(function(){
+                                        $('#produitModal').on('show.bs.modal', function(event){
+                                            var button=$(event.relatedTarget);
+                                            var recId=button.data('id');
+                                            var modal=$(this).prop('id');
+                                            modal.find('#targetInput').val(recId);
+                                        
+                                    });
+                                 });
+                                   
+                               </script>
                     </div>
 
-                    <div class="form-group">
-                        <label>Raison Sociale</label>
-                        <input type="text" class="form-control" name="raisSoc" 
-                               placeholder="Ex: BISIKOMASH SARL">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Téléphone</label>
-                        <input type="text" class="form-control" name="tel" 
-                               placeholder="Ex: 0994123456">
+                     <div class="form-group">
+                        <label>Client *</label>
+                        <input type="text" value="<?= $_GET['idclt'] ?>" class="form-control" name="designP" 
+                               placeholder="Ex: Clou 3 pouces">
                     </div>
 
                     <div class="modal-footer border-0">
@@ -316,6 +342,7 @@ $clt = $res->fetchAll();
         </div>
     </div>
 </div>
+
    <script src="../vendor/jquery/jquery.min.js"></script>
 <script src="../vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="../vendor/jquery-easing/jquery.easing.min.js"></script>
