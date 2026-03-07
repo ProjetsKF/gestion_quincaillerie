@@ -130,6 +130,8 @@ $prod = $res->fetchAll();
                 Gestion des Produits
             </h6>
 
+<!-- Bouton Actualiser -->
+       
             <button class="btn btn-primary btn-sm"
                     data-toggle="modal"
                     data-target="#produitModal">

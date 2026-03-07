@@ -1,13 +1,45 @@
 <?php
-require_once '../bd/database.php';
- $motCle='V'; 
-    if(isset($_POST['btnRecherche'])) {
-        $motCle=htmlspecialchars($_POST['txtRech']);
-    }
-    $req=$pdo->prepare("select *from Produit where designP like '%$motCle%' or caractProduit like '%$motCle%' LIMIT 5");
-    $req->execute(array($motCle,$motCle));
 
-    $prod = $req->fetchAll();
+/* ================= SESSION ================= */
+
+if(session_status() === PHP_SESSION_NONE){
+    session_start();
+}
+
+/* Vérifier si utilisateur connecté */
+
+if(!isset($_SESSION['user_id'])){
+    header("Location: ../index.php");
+    exit;
+}
+
+/* ================= BASE DE DONNÉES ================= */
+
+require_once '../bd/database.php';
+
+/* ================= RECHERCHE ================= */
+
+$motCle = '';
+
+if(isset($_POST['btnRecherche'])){
+
+    $motCle = trim($_POST['txtRech']);
+
+}
+
+$sql = "SELECT * FROM produit
+        WHERE designP LIKE :motcle
+        OR caractProduit LIKE :motcle
+        LIMIT 5";
+
+$req = $pdo->prepare($sql);
+
+$req->execute([
+':motcle' => "%$motCle%"
+]);
+
+$prod = $req->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <!DOCTYPE html>
@@ -73,16 +105,26 @@ require_once '../bd/database.php';
 
         <!-- Header -->
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">
-                Gestion des Produits
-            </h6>
 
-            <button class="btn btn-primary btn-sm"
-                    data-toggle="modal"
-                    data-target="#produitModal">
-                <i class="fas fa-plus"></i> Nouveau Produit
-            </button>
-        </div>
+                <h6 class="m-0 font-weight-bold text-primary">
+                    Gestion des Produits
+                </h6>
+
+                <div>
+
+                    <a href="index.php" class="btn btn-secondary btn-sm mr-2">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </a>
+
+                    <button class="btn btn-primary btn-sm"
+                            data-toggle="modal"
+                            data-target="#produitModal">
+                        <i class="fas fa-plus"></i> Nouveau Produit
+                    </button>
+
+    </div>
+
+</div>
 
         <!-- Body -->
         <div class="card-body">

@@ -23,31 +23,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user) {
 
             /* Vérification du mot de passe */
-            if (password_verify($motpass, $user['motPass'])) {
 
-                /* Vérifier si le compte est actif */
-                if ($user['statut'] !== 'En attente') {
-
-                    $_SESSION['user_id'] = $user['idutil'];
-                    $_SESSION['nom'] = $user['nom'];
-                    $_SESSION['prenom'] = $user['prenom'];
-                    $_SESSION['email'] = $user['email'];
-                    $_SESSION['role'] = $user['rol'];
-                    $_SESSION['idsuc'] = $user['idSuc'];
-
-                    header("Location: dashboard.php");
-                    exit;
-
-                } else {
-
-                    $message = "Votre compte est en attente de validation.";
-                    $message_type = "error";
-
-                }
-
-            } else {
+            if (!password_verify($motpass, $user['motPass'])) {
 
                 $message = "Mot de passe incorrect.";
+                $message_type = "error";
+
+            }
+
+            /* Vérifier si compte suspendu */
+
+            elseif ($user['statut'] === 'Suspendu') {
+
+                $message = "Votre compte est suspendu. Contactez l'administrateur.";
+                $message_type = "error";
+
+            }
+
+            /* Vérifier si compte en attente */
+
+            elseif ($user['statut'] === 'En attente') {
+
+                $message = "Votre compte est en attente de validation.";
+                $message_type = "error";
+
+            }
+
+            /* Compte actif */
+
+            elseif ($user['statut'] === 'Actif') {
+
+                $_SESSION['user_id'] = $user['idutil'];
+                $_SESSION['nom'] = $user['nom'];
+                $_SESSION['prenom'] = $user['prenom'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['role'] = $user['rol'];
+                $_SESSION['idsuc'] = $user['idSuc'];
+
+                header("Location: dashboard.php");
+                exit;
+
+            }
+
+            else {
+
+                $message = "Statut du compte inconnu.";
                 $message_type = "error";
 
             }

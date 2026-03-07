@@ -71,6 +71,20 @@ $users = $stmt->fetchAll();
 
                     <!-- Page Heading -->
                     <table class="table table-hover">
+                        <?php if(isset($_GET['error']) && $_GET['error']=="selfdelete"): ?>
+
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+
+<i class="fas fa-exclamation-triangle mr-2"></i>
+Impossible de supprimer votre propre compte.
+
+<button type="button" class="close" data-dismiss="alert">
+<span>&times;</span>
+</button>
+
+</div>
+
+<?php endif; ?>
 
                 <thead>
                 <tr>
@@ -148,32 +162,38 @@ $users = $stmt->fetchAll();
                             <?php endif; ?>
 
                             </td>
-
                             <td>
 
-                            <?php if($u['statut']=="En attente"): ?>
+                                    <?php if($u['statut']=="En attente"): ?>
 
-                            <a href="activer.php?id=<?php echo $u['idutil']; ?>"
-                            class="btn btn-success btn-sm">
-                            Activer
-                            </a>
+                                    <a href="activer.php?id=<?php echo $u['idutil']; ?>"
+                                    class="btn btn-success btn-sm">
+                                    Activer
+                                    </a>
 
-                            <?php elseif($u['statut']=="Actif"): ?>
+                                    <?php elseif($u['statut']=="Actif"): ?>
 
-                            <a href="suspendre.php?id=<?php echo $u['idutil']; ?>"
-                            class="btn btn-warning btn-sm"
-                            onclick="return confirm('Suspendre cet utilisateur ?');">
-                            Suspendre
-                            </a>
+                                    <a href="suspendre.php?id=<?php echo $u['idutil']; ?>"
+                                    class="btn btn-warning btn-sm"
+                                    onclick="return confirm('Suspendre cet utilisateur ?');">
+                                    Suspendre
+                                    </a>
 
-                            <?php else: ?>
+                                    <?php else: ?>
 
-                            <a href="activer.php?id=<?php echo $u['idutil']; ?>"
-                            class="btn btn-primary btn-sm">
-                            Réactiver
-                            </a>
+                                    <a href="activer.php?id=<?php echo $u['idutil']; ?>"
+                                    class="btn btn-primary btn-sm">
+                                    Réactiver
+                                    </a>
 
-                            <?php endif; ?>
+                                    <?php endif; ?>
+
+
+                                    <a href="delete.php?id=<?php echo $u['idutil']; ?>"
+                                    class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Supprimer définitivement cet utilisateur ?');">
+                                    Supprimer
+                                    </a>
 
                             </td>
 
