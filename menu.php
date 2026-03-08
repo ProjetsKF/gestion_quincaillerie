@@ -60,7 +60,7 @@
                 <i class="fas fa-shopping-cart mr-2"></i> Commande
             </a>
 
-            <a class="collapse-item" href="paiements/index.php">
+            <a class="collapse-item" href="/gestion_quincaillerie/paiements/index.php">
                 <i class="fas fa-file-invoice-dollar mr-2"></i> Facturation
             </a>
             <a class="collapse-item" href="/gestion_quincaillerie/clients/index.php">
