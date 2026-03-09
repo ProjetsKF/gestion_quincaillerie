@@ -1,6 +1,6 @@
 <?php
-session_start();
 
+session_start();
 require_once '../bd/database.php';
 
 $sql = "
@@ -12,8 +12,10 @@ $sql = "
             cl.postnom,
             cl.prenom,
             cl.raisSoc,
+            cl.tel,
 
             s.nomSuc,
+            s.Comm,
 
             p.designP,
 
@@ -35,12 +37,11 @@ $sql = "
             ON d.idprod = p.idprod
 
         ORDER BY c.idCom DESC
-      ";
+";
 
 $stmt = $pdo->query($sql);
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -69,6 +70,14 @@ $stmt = $pdo->query($sql);
 
     <!-- Custom styles for this template-->
     <link href="../css/sb-admin-2.min.css" rel="stylesheet">
+
+    <style>
+        
+        .table-commandes td,
+.table-commandes th{
+    font-size:13px;
+}
+    </style>
 
     
 
@@ -101,74 +110,81 @@ $stmt = $pdo->query($sql);
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
 <h1 class="h3 mb-4 text-gray-800">Facturation</h1>
- <table class="table table-hover">
+<table class="table table-bordered table-hover table-sm table-commandes">
 
         <thead>
 
-                <tr>
+            <tr>
 
-                        <th>ID</th>
-                        <th>Client</th>
-                        <th>Succursale</th>
-                        <th>Produit</th>
-                        <th>Quantité</th>
-                        <th>Unité</th>
-                        <th>Action</th>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Société</th>
+                <th>Téléphone</th>
+                <th>Succursale</th>
+                <th>Commune</th>
+                <th>Produit</th>
+                <th>Quantité</th>
+                <th>Unité</th>
+                <th>Action</th>
 
-                </tr>
+            </tr>
 
-        </thead>
+</thead>
 
-        <tbody>
+      <tbody>
 
-                <?php while($row = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
+<?php while($row = $stmt->fetch(PDO::FETCH_ASSOC)) : ?>
 
-                <tr>
+<tr>
 
-                        <td>
-                                <?php echo $row['idCom']; ?>
-                        </td>
+    <td><?php echo $row['idCom']; ?></td>
 
-                        <td>
-                                <i class="fas fa-user"></i>
-                                <?php echo $row['nom']." ".$row['postnom']." ".$row['prenom']; ?>
-                        </td>
+    <td><?php echo $row['datCom']; ?></td>
 
-                        <td>
-                                <i class="fas fa-building"></i>
-                                <?php echo $row['nomSuc']; ?>
-                        </td>
+    <td>
+        <i class="fas fa-user"></i>
+        <?php echo $row['nom']." ".$row['postnom']." ".$row['prenom']; ?>
+    </td>
 
-                        <td>
-                                <?php echo $row['designP']; ?>
-                        </td>
+    <td><?php echo $row['raisSoc']; ?></td>
 
-                        <td>
-                                <?php echo $row['Qte']; ?>
-                        </td>
+    <td>
+        <i class="fas fa-phone"></i>
+        <?php echo $row['tel']; ?>
+    </td>
 
-                        <td>
-                                <?php echo $row['unitMes']; ?>
-                        </td>
+    <td>
+        <i class="fas fa-building"></i>
+        <?php echo $row['nomSuc']; ?>
+    </td>
 
-                        <td>
+    <td><?php echo $row['Comm']; ?></td>
 
-                                <button 
-                                        class="btn btn-sm btn-primary"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#factureModal"
-                                >
-                                        <i class="fas fa-file-invoice"></i>
-                                        Facture
-                                </button>
+    <td><?php echo $row['designP']; ?></td>
 
-                        </td>
+    <td><?php echo $row['Qte']; ?></td>
 
-                </tr>
+    <td><?php echo $row['unitMes']; ?></td>
 
-                <?php endwhile; ?>
+    <td>
 
-        </tbody>
+        <button
+            class="btn btn-primary btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#factureModal"
+        >
+            <i class="fas fa-file-invoice"></i>
+            Facture
+        </button>
+
+    </td>
+
+</tr>
+
+<?php endwhile; ?>
+
+</tbody>
 
 </table>
 
