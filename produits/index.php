@@ -1,67 +1,48 @@
 <?php
+
 session_start();
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
-    exit;
-}
-?>
-
-<?php
-//session_start();
 require_once '../bd/database.php';
-
-/* Sécurité : recruteur uniquement 
-if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
-    header('Location: ../login.php');
-    exit;
-}
-*/
-
-$message = '';
-$message_type = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $designP  = trim($_POST['designP']);
-    $caractProduit = trim($_POST['caractProduit']);
-
-    if ($designP && $caractProduit) {
-
-        $sql = "INSERT INTO produit
-                (designP, caractProduit)
-                VALUES
-                (:designP, :caractProduit)";
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':designP'       => $designP,
-            ':caractProduit' => $caractProduit
-        ]);
-
-        $message = "Produit enregistré avec succès.";
-        $message_type = 'success';
-
-    } else {
-        $message = "Tous les champs sont obligatoires.";
-        $message_type = 'error';
-    }
-}
-
-
 /* ===============================
-   AFFICHAGE DES PRODUITS
+   PAGINATION PRODUITS
 ================================= */
 
-$sql = "SELECT * FROM produit LIMIT 5";
+/* Nombre de produits par page */
+$limit = 10;
+
+/* Page actuelle */
+$page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+
+if ($page < 1) {
+    $page = 1;
+}
+
+/* Calcul OFFSET */
+$offset = ($page - 1) * $limit;
+
+/* Compter le nombre total de produits */
+$countQuery = $pdo->query("SELECT COUNT(*) FROM produit");
+$totalProducts = $countQuery->fetchColumn();
+
+/* Calcul du nombre total de pages */
+$totalPages = ceil($totalProducts / $limit);
+
+
+/* Requête avec LIMIT */
+$sql = "SELECT * 
+        FROM produit
+        ORDER BY idprod DESC
+        LIMIT :limit OFFSET :offset";
 
 $res = $pdo->prepare($sql);
+
+$res->bindValue(':limit', $limit, PDO::PARAM_INT);
+$res->bindValue(':offset', $offset, PDO::PARAM_INT);
+
 $res->execute();
 
 $prod = $res->fetchAll();
-
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -193,6 +174,52 @@ $prod = $res->fetchAll();
                 </table>
                 <?php endif; ?>
             </div>
+
+            <div class="d-flex justify-content-center mt-3">
+
+<nav>
+
+<ul class="pagination pagination-sm">
+
+<?php if ($page > 1): ?>
+
+<li class="page-item">
+<a class="page-link" href="?page=<?php echo $page - 1; ?>">
+Précédent
+</a>
+</li>
+
+<?php endif; ?>
+
+
+<?php for ($i = 1; $i <= $totalPages; $i++): ?>
+
+<li class="page-item <?php if ($i == $page) echo 'active'; ?>">
+
+<a class="page-link" href="?page=<?php echo $i; ?>">
+<?php echo $i; ?>
+</a>
+
+</li>
+
+<?php endfor; ?>
+
+
+<?php if ($page < $totalPages): ?>
+
+<li class="page-item">
+<a class="page-link" href="?page=<?php echo $page + 1; ?>">
+Suivant
+</a>
+</li>
+
+<?php endif; ?>
+
+</ul>
+
+</nav>
+
+</div>
 
         </div>
     </div>

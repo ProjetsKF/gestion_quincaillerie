@@ -91,53 +91,74 @@
         <span>Rapports</span>
     </a>
 
-    <div id="collapseRapports" class="collapse" data-parent="#accordionSidebar">
-        <div class="bg-white py-2 collapse-inner rounded">
+   <div id="collapseRapports" class="collapse" data-parent="#accordionSidebar">
 
-            <a class="collapse-item" href="rapports/ventes.php">
-                <i class="fas fa-chart-bar mr-2 text-primary"></i>
-                Rapport ventes
-            </a>
+    <div class="bg-white py-2 collapse-inner rounded">
 
-            <a class="collapse-item" href="rapports/achats.php">
-                <i class="fas fa-file-invoice mr-2 text-success"></i>
-                Rapport achats
-            </a>
+        <a class="collapse-item" href="rapports/ventes.php">
+            <i class="fas fa-chart-bar mr-2 text-primary"></i>
+            Rapport ventes
+        </a>
 
-            <a class="collapse-item" href="rapports/benefices.php">
-                <i class="fas fa-coins mr-2 text-warning"></i>
-                Rapport bénéfices
-            </a>
+        <a class="collapse-item" href="rapports/achats.php">
+            <i class="fas fa-file-invoice mr-2 text-success"></i>
+            Rapport achats
+        </a>
 
-        </div>
+        <a class="collapse-item" href="rapports/benefices.php">
+            <i class="fas fa-coins mr-2 text-warning"></i>
+            Rapport bénéfices
+        </a>
+
+      
     </div>
+
+</div>
 </li>
   <hr class="sidebar-divider">
 
     <!-- ================= ADMINISTRATION ================= -->
-    <!-- ADMINISTRATION -->
+  
     <div class="sidebar-heading">Administration</div>
 
     <li class="nav-item">
-        <a class="nav-link" href="/gestion_quincaillerie/utilisateurs/index.php">
-            <i class="fas fa-user-shield"></i>
-            <span>Utilisateurs</span>
-        </a>
-    </li>
-    
-     <li class="nav-item">
+
+    <a class="nav-link" href="/gestion_quincaillerie/utilisateurs/index.php">
+        <i class="fas fa-user-shield"></i>
+        <span>Utilisateurs</span>
+    </a>
+
+</li>
+
+
+<li class="nav-item">
+
     <a class="nav-link" href="/gestion_quincaillerie/produits/index.php">
         <i class="fas fa-boxes"></i>
         <span>Produits</span>
     </a>
+
 </li>
 
-    <li class="nav-item">
-        <a class="nav-link" href="/gestion_quincaillerie/succursales/index.php">
-            <i class="fas fa-building"></i>
-            <span>Succursales</span>
-        </a>
-    </li>
+
+<li class="nav-item">
+
+    <a class="nav-link" href="/gestion_quincaillerie/succursales/index.php">
+        <i class="fas fa-building"></i>
+        <span>Succursales</span>
+    </a>
+
+</li>
+
+
+<li class="nav-item">
+
+    <a class="nav-link" href="/gestion_quincaillerie/prix/index.php">
+        <i class="fas fa-tags"></i>
+        <span>Fixation prix</span>
+    </a>
+
+</li>
 
     <hr class="sidebar-divider d-none d-md-block">
 
