@@ -131,6 +131,13 @@ $prod = $res->fetchAll();
             </h6>
 
 <!-- Bouton Actualiser -->
+
+           <a href="facture.php?clt=<?php echo $_GET['idclt']; ?> 
+            &idCom=<?php echo $_GET['idcmd']; ?>" class="btn btn-success btn-sm"
+                    >
+                <i class="fa-duotone fa-thin fa-folder-closed"></i> Fin commande
+            </a>
+
        
             <button class="btn btn-primary btn-sm"
                     data-toggle="modal"

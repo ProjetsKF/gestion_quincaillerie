@@ -4,7 +4,7 @@ session_start();
 require_once '../bd/database.php';
 
 $sql = "
-        SELECT DISTINCT
+        SELECT 
             c.idCom,
             c.datCom,
 
@@ -15,7 +15,12 @@ $sql = "
             cl.tel,
 
             s.nomSuc,
-            s.Comm
+            s.Comm,
+
+            p.designP,
+
+            d.Qte,
+            d.unitMes
 
         FROM commande c
 
@@ -36,18 +41,29 @@ $sql = "
 
 $stmt = $pdo->query($sql);
 
-$sqlfact="SELECT c.idCom, c.datCom, cl.nom, cl.postnom, cl.prenom, cl.raisSoc, cl.tel, s.nomSuc, s.Comm, p.designP, d.Qte, d.unitMes,p.caractProduit FROM commande c INNER JOIN client cl ON c.idClt = cl.idclt INNER JOIN succursale s ON c.idSuc = s.idsuc INNER JOIN detailscommande d ON c.idCom = d.idcom INNER JOIN produit p ON d.idprod = p.idprod WHERE c.idCom=18";
+$sqlfact="SELECT c.idCom, c.datCom, cl.nom, cl.postnom, cl.prenom, cl.raisSoc, cl.tel, s.nomSuc, s.Comm, p.designP, d.Qte, d.unitMes,p.caractProduit FROM commande c INNER JOIN client cl ON c.idClt = cl.idclt INNER JOIN succursale s ON c.idSuc = s.idsuc INNER JOIN detailscommande d ON c.idCom = d.idcom INNER JOIN produit p ON d.idprod = p.idprod WHERE c.idCom=:idco";
+
+$sqlfactEnt="SELECT c.idCom, c.datCom, cl.nom, cl.postnom, cl.prenom, cl.raisSoc, cl.tel, s.nomSuc, s.Comm, p.designP, d.Qte, d.unitMes,p.caractProduit, CONCAT('FAC',' ',YEAR(c.datCom),' ',c.idCom) as NumFact FROM commande c INNER JOIN client cl ON c.idClt = cl.idclt INNER JOIN succursale s ON c.idSuc = s.idsuc INNER JOIN detailscommande d ON c.idCom = d.idcom INNER JOIN produit p ON d.idprod = p.idprod WHERE c.idCom=:idco LIMIT 1";
 
 $res= $pdo->prepare($sqlfact);
+$resEnt= $pdo->prepare($sqlfactEnt);
 $res->execute([
+    ':idco' =>$_GET['idCom']
+]);
+
+$resEnt->execute([
+    ':idco' =>$_GET['idCom']
 ]);
 
 $com = $res->fetchAll();
+$comEnt = $resEnt->fetchAll();
+
 $co = $res->fetch();
-$cpteur=0;
+$compteur=0;
 
 $no=$co['nom'];
 $idco=$co['idCom'];
+
 
 
 ?>
@@ -118,75 +134,7 @@ $idco=$co['idCom'];
 
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
-<h1 class="h3 mb-4 text-gray-800">Facturation</h1>
-<table class="table table-bordered table-hover table-sm table-commandes">
 
-        <thead>
-
-            <tr>
-
-                <th>N°</th>
-                <th>Date</th>
-                <th>Client</th>
-                <th>Société</th>
-                <th>Téléphone</th>
-                <th>Succursale</th>
-                <th>Commune</th>
-                <th>Action</th>
-
-            </tr>
-
-</thead>
-
-      <tbody>
-
-<?php while($row = $stmt->fetch(PDO::FETCH_ASSOC)) : $cpteur++ ?>
-
-<tr>
-
-    <td><?php echo $cpteur ?></td>
-
-    <td><?php echo $row['datCom']; ?></td>
-
-    <td>
-        <i class="fas fa-user"></i>
-        <?php echo $row['nom']." ".$row['postnom']." ".$row['prenom']; ?>
-    </td>
-
-    <td><?php echo $row['raisSoc']; ?></td>
-
-    <td>
-        <i class="fas fa-phone"></i>
-        <?php echo $row['tel']; ?>
-    </td>
-
-    <td>
-        <i class="fas fa-building"></i>
-        <?php echo $row['nomSuc']; ?>
-    </td>
-
-    <td><?php echo $row['Comm']; ?></td>
-
-    <td>
-
-            
-            
-            <a href="facture.php?clt=<?php echo $row['nom'].' '.$row['postnom'].' '.$row['prenom']; ?> 
-            &dat=<?php echo $row['datCom']; ?>&tel=<?php echo $row['tel']; ?>&idCom=<?php echo $row['idCom']; ?>" class="btn btn-primary btn-sm">
-            <i class="fas fa-file-invoice"></i>
-           
-            Facture
-        </a>
-
-    </td>
-
-</tr>
-
-<?php endwhile; ?>
-
-</tbody>
-
-</table>
 
 
 <script>
@@ -210,6 +158,293 @@ $(document).ready(function(){
                 <!-- /.container-fluid -->
 
             </div>
+
+
+<style>
+
+.invoice-container{
+    width:100%;
+    margin:auto;
+    background:#ffffff;
+    padding:30px;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:linear-gradient(90deg,#0a87b8,#2bb3e3);
+    color:#ffffff;
+    padding:20px;
+}
+
+.logo img{
+    width:190px;
+}
+
+.title{
+    font-size:40px;
+    font-weight:bold;
+}
+
+.info-section{
+    display:flex;
+    justify-content:space-between;
+    margin-top:30px;
+}
+
+.items-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:30px;
+}
+
+.items-table th{
+    background:#1fa2cf;
+    color:#ffffff;
+    padding:12px;
+    text-align:left;
+}
+
+.items-table td{
+    padding:12px;
+    border-bottom:1px solid #dddddd;
+}
+
+.items-table tbody tr:nth-child(even){
+    background:#f1f1f1;
+}
+
+.totals{
+    display:flex;
+    justify-content:space-between;
+    margin-top:40px;
+}
+
+.total-box{
+    text-align:right;
+}
+
+.grand-total{
+    background:#1fa2cf;
+    color:#ffffff;
+    padding:15px;
+    font-size:20px;
+    font-weight:bold;
+    margin-top:10px;
+}
+
+.footer{
+    margin-top:40px;
+    border-top:1px solid #dddddd;
+    padding-top:20px;
+}
+
+.facture-actions{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:15px;
+}
+
+/* Impression */
+
+@media print {
+
+    /* conserver les couleurs lors de l'impression */
+
+    *{
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* cacher tout le contenu de la page */
+
+    body *{
+        visibility: hidden;
+    }
+
+    /* afficher uniquement la facture */
+
+    #zoneFacture,
+    #zoneFacture *{
+        visibility: visible;
+    }
+
+    /* positionner la facture pour l'impression */
+
+    #zoneFacture{
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    /* masquer les boutons et actions */
+
+    .facture-actions{
+        display: none;
+    }
+
+   
+
+}
+
+</style>
+
+<!-- zone imprimable -->
+
+<div class="facture-actions d-flex gap-2">
+        <a href="index.php" 
+                class="btn btn-primary ml-10"
+                >
+
+            <i class="fa-solid fa-arrow-left"></i>
+            Retour
+
+        </a>   
+
+         <a href="#" 
+                class="btn btn-primary ml-10"
+                >
+            <i class="fa-solid fa-dollar-sign"></i>
+            Payer
+
+        </a>                       
+
+        <button 
+                class="btn btn-success"
+                onclick="window.print()">
+
+            <i class="fas fa-print"></i>
+            Imprimer
+
+        </button>
+
+    </div>
+
+<div id="zoneFacture">
+     
+
+    
+
+
+    <div class="invoice-container">
+
+        <div class="header">
+
+            <div class="logo">
+                <img src="../img/bisikomashLogo1.png" alt="Logo entreprise">
+            </div>
+
+            <div class="title">
+                FACTURE
+            </div>
+
+        </div>
+
+       <div class="info-section">
+            <?php if (count($comEnt) > 0) :  ?>
+            <div class="invoice-to">
+                
+
+                <h4>FACTURÉ À :</h4>
+                
+                <p>Client : <?php echo $_GET['clt'] ?></p>
+                <p>Avenue Industrielle, Quartier Dilala</p>
+                <p>Commune de Dilala, Kolwezi</p>
+                <?php foreach ($comEnt as $cmde) : ?>
+                <p>Tél : <?php echo $cmde['tel'] ?></p>
+
+
+            </div>
+
+
+            <div class="invoice-details">
+
+                <p><strong>N° Facture : </strong><?php echo $cmde['NumFact']?></p>
+                <p><strong>Date :</strong> <?php echo $cmde['datCom']?></p>
+                <p><strong>Lieu :</strong> Kolwezi, Lualaba</p>
+            <?php endforeach; ?>
+
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <?php if (count($com) > 0) :  ?>
+        <table class="items-table">
+
+            <thead>
+
+                <tr>
+                    <th>N°</th>
+                    <th>DÉSIGNATION DU PRODUIT</th>
+                    <th>PRIX UNITAIRE (CDF)</th>
+                    <th>QUANTITÉ</th>
+                    <th>MONTANT TOTAL</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+                <?php foreach ($com as $cmd) : $compteur++ ?>
+                <tr>
+                    <td><?php echo $compteur ?></td>
+                    <td><?php echo $cmd['designP'].' '.$cmd['caractProduit'] ?></td>
+                    <td>25 000</td>
+                    <td><?php echo $cmd['Qte'].' '.$cmd['unitMes'] ?></td>
+                    <td>125 000</td>
+                </tr>
+                <?php endforeach; ?>
+
+            </tbody>
+        </table>
+        <?php endif; ?>
+
+
+        <div class="totals">
+
+            <div class="payment">
+
+                <h4>Informations de paiement :</h4>
+
+                <p>Entreprise : BISIKOMASH QUINCAILLERIE</p>
+                <p>Compte bancaire : 0123456789</p>
+                <p>Banque : RAWBANK Kolwezi</p>
+                <p>Téléphone : +243 850 754 604</p>
+
+            </div>
+
+
+            <div class="total-box">
+
+                <p>SOUS TOTAL : 197 000 CDF</p>
+                <p>TVA : 0 %</p>
+
+                <div class="grand-total">
+                    TOTAL À PAYER : 197 000 CDF
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="footer">
+
+            <h3>Merci pour votre confiance</h3>
+
+            <p>
+                BISIKOMASH QUINCAILLERIE  
+                Vente de matériaux de construction et fournitures industrielles  
+                Kolwezi – Province du Lualaba – République Démocratique du Congo
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
             <!-- End of Main Content -->
 
              <!-- PIED DE PAGE -->
@@ -405,137 +640,6 @@ $(document).ready(function(){
 
 <!-- zone imprimable -->
 
-<div id="zoneFacture">
-
-    <div class="facture-actions">
-
-        <button 
-                class="btn btn-success"
-                onclick="window.print()">
-
-            <i class="fas fa-print"></i>
-            Imprimer
-
-        </button>
-
-    </div>
-
-
-    <div class="invoice-container">
-
-        <div class="header">
-
-            <div class="logo">
-                <img src="../img/bisikomashLogo1.png" alt="Logo entreprise">
-            </div>
-
-            <div class="title">
-                FACTURE
-            </div>
-
-        </div>
-
-        <div class="info-section">
-
-            <div class="invoice-to">
-                
-
-                <h4>FACTURÉ À :</h4>
-                
-
-                <p>Client : <?php echo $_GET['par'] ?></p>
-                <p>Avenue Industrielle, Quartier Dilala</p>
-                <p>Commune de Dilala, Kolwezi</p>
-                <p>Tél : +243998045380</p>
-
-
-            </div>
-
-
-            <div class="invoice-details">
-
-                <p><strong>N° Facture :</strong> FAC-2026-001</p>
-                <p><strong>Date :</strong> <?php echo $row['datCom'] ?></p>
-                <p><strong>Lieu :</strong> Kolwezi, Lualaba</p>
-
-            </div>
-
-        </div>
-
-        <?php if (count($com) > 0) : ?>
-        <table class="items-table">
-
-            <thead>
-
-                <tr>
-                    <th>N°</th>
-                    <th>DÉSIGNATION DU PRODUIT</th>
-                    <th>PRIX UNITAIRE (CDF)</th>
-                    <th>QUANTITÉ</th>
-                    <th>MONTANT TOTAL</th>
-                </tr>
-
-            </thead>
-
-
-            <tbody>
-                <?php foreach ($com as $cmd) : ?>
-                <tr>
-                    <td>1</td>
-                    <td><?php echo $cmd['designP'].' '.$cmd['caractProduit'] ?></td>
-                    <td>25 000</td>
-                    <td><?php echo $cmd['Qte'].' '.$cmd['unitMes'] ?></td>
-                    <td>125 000</td>
-                </tr>
-                <?php endforeach; ?>
-
-            </tbody>
-        </table>
-        <?php endif; ?>
-
-
-        <div class="totals">
-
-            <div class="payment">
-
-                <h4>Informations de paiement :</h4>
-
-                <p>Entreprise : BISIKOMASH QUINCAILLERIE</p>
-                <p>Compte bancaire : 0123456789</p>
-                <p>Banque : RAWBANK Kolwezi</p>
-                <p>Téléphone : +243 850 754 604</p>
-
-            </div>
-
-
-            <div class="total-box">
-
-                <p>SOUS TOTAL : 197 000 CDF</p>
-                <p>TVA : 0 %</p>
-
-                <div class="grand-total">
-                    TOTAL À PAYER : 197 000 CDF
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="footer">
-
-            <h3>Merci pour votre confiance</h3>
-
-            <p>
-                BISIKOMASH QUINCAILLERIE  
-                Vente de matériaux de construction et fournitures industrielles  
-                Kolwezi – Province du Lualaba – République Démocratique du Congo
-            </p>
-
-        </div>
-
-    </div>
-
-</div>
 
             </div>
 

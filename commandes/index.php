@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 
-$sql = "SELECT * FROM Client LIMIT 5";
+$sql = "SELECT * FROM Client LIMIT 10";
 
 $res= $pdo->prepare($sql);
 $res->execute([
