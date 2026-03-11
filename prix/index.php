@@ -35,6 +35,7 @@ SELECT
     a.Qte,
     a.pu AS prixAchat,
     a.datAprov,
+    a.unitMon as unitMonAch,
 
     p.designP,
 
@@ -238,7 +239,7 @@ Suivant
 
 				<td><?php echo $a['Qte']; ?></td>
 
-				<td><?php echo number_format($a['prixAchat'],0,","," "); ?> CDF</td>
+				<td><?php echo number_format($a['prixAchat'],0,","," ").$a['unitMonAch']; ?> </td>
 				<td>
 
 				<?php if($a['prixVente']): ?>
@@ -379,7 +380,7 @@ readonly>
 
 <input type="text"
 class="form-control"
-value="<?php echo number_format($a['prixAchat'],0,","," "); ?> CDF"
+value="<?php echo number_format($a['prixAchat'],0,","," ").' '.$a['unitMonAch']; ?> "
 readonly>
 
 </div>

@@ -41,9 +41,9 @@ $sql = "
 
 $stmt = $pdo->query($sql);
 
-$sqlfact="SELECT c.idCom, c.datCom, cl.nom, cl.postnom, cl.prenom, cl.raisSoc, cl.tel, s.nomSuc, s.Comm, p.designP, d.Qte, d.unitMes,p.caractProduit FROM commande c INNER JOIN client cl ON c.idClt = cl.idclt INNER JOIN succursale s ON c.idSuc = s.idsuc INNER JOIN detailscommande d ON c.idCom = d.idcom INNER JOIN produit p ON d.idprod = p.idprod WHERE c.idCom=:idco";
+$sqlfact="SELECT commande.idCom,datCom,nom,postnom,prenom,raisSoc,tel,nomSuc,comm,designP,detailscommande.Qte,detailscommande.unitMes,caractProduit,fixationprix.pu,fixationprix.unitMon,fixationprix.pu*detailscommande.Qte as PT FROM Commande INNER join client on commande.idClt=client.idclt INNER JOIN detailscommande ON commande.idCom=detailscommande.idCom INNER JOIN produit ON detailscommande.idprod=produit.idprod INNER JOIN approvisionnement on produit.idprod=approvisionnement.idProd INNER join succursale on approvisionnement.idSuc=succursale.idsuc INNER join fixationprix on approvisionnement.idAprov=fixationprix.IdApprov WHERE commande.idCom=:idco";
 
-$sqlfactEnt="SELECT c.idCom, c.datCom, cl.nom, cl.postnom, cl.prenom, cl.raisSoc, cl.tel, s.nomSuc, s.Comm, p.designP, d.Qte, d.unitMes,p.caractProduit, CONCAT('FAC',' ',YEAR(c.datCom),' ',c.idCom) as NumFact FROM commande c INNER JOIN client cl ON c.idClt = cl.idclt INNER JOIN succursale s ON c.idSuc = s.idsuc INNER JOIN detailscommande d ON c.idCom = d.idcom INNER JOIN produit p ON d.idprod = p.idprod WHERE c.idCom=:idco LIMIT 1";
+$sqlfactEnt="SELECT *,SUM(PT) as SousTot from (SELECT commande.idCom,datCom,nom,postnom,prenom,raisSoc,tel,nomSuc,comm,designP,detailscommande.Qte,detailscommande.unitMes,caractProduit,fixationprix.pu,fixationprix.unitMon,fixationprix.pu*detailscommande.Qte as PT,CONCAT('FAC',' ',YEAR(datCom),' ',commande.idCom) as NumFact FROM Commande INNER join client on commande.idClt=client.idclt INNER JOIN detailscommande ON commande.idCom=detailscommande.idCom INNER JOIN produit ON detailscommande.idprod=produit.idprod INNER JOIN approvisionnement on produit.idprod=approvisionnement.idProd INNER join succursale on approvisionnement.idSuc=succursale.idsuc INNER join fixationprix on approvisionnement.idAprov=fixationprix.IdApprov)rqt WHERE idCom=:idco LIMIT 1";
 
 $res= $pdo->prepare($sqlfact);
 $resEnt= $pdo->prepare($sqlfactEnt);
@@ -390,9 +390,9 @@ $(document).ready(function(){
                 <tr>
                     <td><?php echo $compteur ?></td>
                     <td><?php echo $cmd['designP'].' '.$cmd['caractProduit'] ?></td>
-                    <td>25 000</td>
+                    <td><?php echo $cmd['pu'].' '.$cmd['unitMon'] ?></td>
                     <td><?php echo $cmd['Qte'].' '.$cmd['unitMes'] ?></td>
-                    <td>125 000</td>
+                    <td><?php echo ($cmd['pu']*$cmd['Qte']).' '.$cmd['unitMon'] ?></td>
                 </tr>
                 <?php endforeach; ?>
 
@@ -415,16 +415,18 @@ $(document).ready(function(){
             </div>
 
 
+             <?php if (count($comEnt) > 0) :  ?>
             <div class="total-box">
-
-                <p>SOUS TOTAL : 197 000 CDF</p>
+                 <?php foreach ($comEnt as $cmde) : ?>
+                <p>SOUS TOTAL : <?php echo $cmde['SousTot'].' '.$cmde['unitMon']  ?></p>
                 <p>TVA : 0 %</p>
 
                 <div class="grand-total">
-                    TOTAL À PAYER : 197 000 CDF
+                    TOTAL À PAYER : <?php echo $cmde['SousTot'].' '.$cmde['unitMon']  ?>
                 </div>
-
+                <?php endforeach; ?>
             </div>
+            <?php endif; ?>
 
         </div>
 

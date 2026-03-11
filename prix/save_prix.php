@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update = $pdo->prepare("
                 UPDATE fixationprix
                 SET pu = :pu,
-                    unitMon = :unitMon
+                    unitMon = (Select unitMon from Approvisionnement Where idAprov=:idAprov)
                 WHERE IdApprov = :idAprov
             ");
 
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO fixationprix
                 (pu, unitMon, IdApprov)
                 VALUES
-                (:pu, :unitMon, :idAprov)
+                (:pu, (Select unitMon from Approvisionnement Where idAprov=:idAprov), :idAprov)
             ");
 
             $insert->execute([

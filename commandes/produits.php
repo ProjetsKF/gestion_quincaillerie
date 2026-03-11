@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
    AFFICHAGE DES PRODUITS
 ================================= */
 
-$sql = "SELECT * FROM produit LIMIT 5";
+$sql = "SELECT Produit.idprod,designP,caractProduit,fixationprix.pu,fixationprix.unitMon FROM produit INNER join approvisionnement on produit.idprod=approvisionnement.idProd inner join fixationprix on approvisionnement.idAprov=fixationprix.IdApprov LIMIT 5";
 
 $res = $pdo->prepare($sql);
 $res->execute();
