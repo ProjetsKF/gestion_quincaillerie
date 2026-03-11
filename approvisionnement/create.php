@@ -49,12 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':idSuc'    => $idSuc
         ));
 
-        header("Location: index.php?success=1");
+        header("Location: stock.php?success=1");
         exit;
 
     } else {
 
-        header("Location: index.php?error=1");
+        header("Location: stock.php?error=1");
         exit;
     }
 }

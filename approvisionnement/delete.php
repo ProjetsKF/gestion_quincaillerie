@@ -13,11 +13,11 @@ if (isset($_GET['id'])) {
             ':idAprov' => $idAprov
         ));
 
-        header("Location: index.php?deleted=1");
+        header("Location: stock.php?deleted=1");
         exit;
     }
 }
 
-header("Location: index.php?error=1");
+header("Location: stock.php?error=1");
 exit;
 ?>

@@ -29,7 +29,7 @@
 
          <!-- MENU -->
 
-                    <?php include("menu.php"); ?>
+                    <?php include("../menu.php"); ?>
 
         <!-- FIN MENU -->
 
@@ -42,7 +42,7 @@
                
             <!-- Topbar -->
 
-                 <?php include("topbar.php"); ?>
+                 <?php include("../topbar.php"); ?>
 
             <!-- End of Topbar -->
 
@@ -60,7 +60,7 @@
 
              <!-- PIED DE PAGE -->
 
-                     <?php include("pieds.php"); ?>
+                     <?php include("../pieds.php"); ?>
 
              <!-- FIN PIED DE PAGE -->
 
