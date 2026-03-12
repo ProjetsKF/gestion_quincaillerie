@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
    AFFICHAGE DES PRODUITS
 ================================= */
 
-$sql = "SELECT Produit.idprod,designP,caractProduit,fixationprix.pu,fixationprix.unitMon FROM produit INNER join approvisionnement on produit.idprod=approvisionnement.idProd inner join fixationprix on approvisionnement.idAprov=fixationprix.IdApprov LIMIT 5";
+$sql = "SELECT Produit.idprod,designP,caractProduit,fixationprix.pu,fixationprix.unitMon,approvisionnement.unitMes FROM produit INNER join approvisionnement on produit.idprod=approvisionnement.idProd inner join fixationprix on approvisionnement.idAprov=fixationprix.IdApprov LIMIT 5";
 
 $res = $pdo->prepare($sql);
 $res->execute();
@@ -188,7 +188,7 @@ $prod = $res->fetchAll();
                             <td class="text-center">
 
                                 
-                                <a href="../commandes/creationCmdeDet.php?idclt=<?= $_GET['idclt'] ?>&idcmd=<?= $_GET['idcmd'] ?>&prod=<?= $pr['designP'].' '.$pr['caractProduit'] ?>" class="btn-edit"   
+                                <a href="../commandes/creationCmdeDet.php?idclt=<?= $_GET['idclt'] ?>&idcmd=<?= $_GET['idcmd'] ?>&prod=<?= $pr['designP'].' '.$pr['caractProduit'] ?>&unitMes=<?= $pr['unitMes'] ?>" class="btn-edit"   
                                         >
                                     <i class="fas fa-shopping-cart mr-2"></i>
                                 </a>

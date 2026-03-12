@@ -158,8 +158,8 @@ $prod = $res->fetchAll();
 
                      <div class="form-group">
                         <label>Unité de mésure *</label>
-                        <input type="text" class="form-control" name="unitMes" value="" 
-                               placeholder="Ex: Kg, pièces, carton, bidons, etc.">
+                        <input type="text" class="form-control" name="unitMes" value="<?= $_GET['unitMes'] ?>" 
+                               placeholder="Ex: Kg, pièces, carton, bidons, etc." readonly="true">
                     </div>
 
 
