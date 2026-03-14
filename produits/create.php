@@ -1,25 +1,19 @@
 <?php
-//session_start();
+
 require_once '../bd/database.php';
+require_once '../log_activity.php';
 
-/* Sécurité : recruteur uniquement 
-if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
-    header('Location: ../login.php');
-    exit;
-}
-
-*/
+session_start();
 
 $message = '';
 $message_type = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $designP  = trim($_POST['designP']);
+    $designP = trim($_POST['designP']);
     $caractProduit = trim($_POST['caractProduit']);
-    
 
-    if ($designP && $caractProduit ) {
+    if ($designP && $caractProduit) {
 
         $sql = "INSERT INTO produit
                 (designP, caractProduit)
@@ -27,17 +21,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (:designP, :caractProduit)";
 
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':designP'          => $designP,
-            ':caractProduit'    => $caractProduit           
-        ]);
-        header('Location:index.php');
 
-        $message = "Produit enregistré avec succès.";
-        $message_type = 'success';
+        $stmt->execute([
+            ':designP' => $designP,
+            ':caractProduit' => $caractProduit
+        ]);
+
+        /* enregistrer l'activité */
+
+        logActivity(
+            $pdo,
+            $_SESSION['user_id'],
+            "Création produit",
+            "Nouveau produit ajouté : ".$designP
+        );
+
+        header("Location: index.php?added=1");
+        exit;
 
     } else {
+
         $message = "Tous les champs sont obligatoires.";
-        $message_type = 'Erreur';
+        $message_type = 'error';
+
     }
 }
+?>

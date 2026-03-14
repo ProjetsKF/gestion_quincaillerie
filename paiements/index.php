@@ -3,52 +3,126 @@
 session_start();
 require_once '../bd/database.php';
 
-$sql = "
-        SELECT DISTINCT
-            c.idCom,
-            c.datCom,
+/* ===============================
+   RECHERCHE
+================================= */
 
-            cl.nom,
-            cl.postnom,
-            cl.prenom,
-            cl.raisSoc,
-            cl.tel,
+$search = isset($_GET['txtRech']) ? trim($_GET['txtRech']) : '';
 
-            s.nomSuc,
-            s.Comm
+/* ===============================
+   PAGINATION
+================================= */
 
-        FROM commande c
+$limit = 10;
 
-        INNER JOIN client cl 
-            ON c.idClt = cl.idclt
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 
-        INNER JOIN succursale s 
-            ON c.idSuc = s.idsuc
+if ($page < 1) {
+    $page = 1;
+}
 
-        INNER JOIN detailscommande d 
-            ON c.idCom = d.idcom
+$start = ($page - 1) * $limit;
 
-        INNER JOIN produit p 
-            ON d.idprod = p.idprod
 
-        ORDER BY c.idCom DESC
+/* ===============================
+   TOTAL COMMANDES
+================================= */
+
+$countSql = "
+    SELECT COUNT(*)
+    FROM commande c
+    LEFT JOIN client cl ON c.idClt = cl.idclt
 ";
 
-$stmt = $pdo->query($sql);
+if (!empty($search)) {
 
-$sqlfact="SELECT c.idCom, c.datCom, cl.nom, cl.postnom, cl.prenom, cl.raisSoc, cl.tel, s.nomSuc, s.Comm, p.designP, d.Qte, d.unitMes,p.caractProduit FROM commande c INNER JOIN client cl ON c.idClt = cl.idclt INNER JOIN succursale s ON c.idSuc = s.idsuc INNER JOIN detailscommande d ON c.idCom = d.idcom INNER JOIN produit p ON d.idprod = p.idprod WHERE c.idCom=18";
+    $countSql .= "
+        WHERE cl.nom LIKE :search
+        OR cl.postnom LIKE :search
+        OR cl.prenom LIKE :search
+        OR cl.raisSoc LIKE :search
+        OR cl.tel LIKE :search
+        OR c.datCom LIKE :search
+    ";
+}
 
-$res= $pdo->prepare($sqlfact);
-$res->execute([
-]);
+$stmtCount = $pdo->prepare($countSql);
 
-$com = $res->fetchAll();
-$co = $res->fetch();
-$cpteur=0;
+if (!empty($search)) {
+    $stmtCount->bindValue(':search', "%$search%", PDO::PARAM_STR);
+}
 
-$no=$co['nom'];
-$idco=$co['idCom'];
+$stmtCount->execute();
 
+$totalRecords = $stmtCount->fetchColumn();
+
+$totalPages = ceil($totalRecords / $limit);
+
+
+/* ===============================
+   RECUPERATION DES COMMANDES
+================================= */
+
+$sql = "
+    SELECT
+        c.idCom,
+        c.datCom,
+
+        cl.nom,
+        cl.postnom,
+        cl.prenom,
+        cl.raisSoc,
+        cl.tel,
+
+        s.nomSuc,
+        s.Comm
+
+    FROM commande c
+
+    LEFT JOIN client cl
+        ON c.idClt = cl.idclt
+
+    LEFT JOIN succursale s
+        ON c.idSuc = s.idsuc
+";
+
+if (!empty($search)) {
+
+    $sql .= "
+        WHERE cl.nom LIKE :search
+        OR cl.postnom LIKE :search
+        OR cl.prenom LIKE :search
+        OR cl.raisSoc LIKE :search
+        OR cl.tel LIKE :search
+        OR c.datCom LIKE :search
+    ";
+}
+
+$sql .= "
+    ORDER BY c.idCom DESC
+    LIMIT :start, :limit
+";
+
+$stmt = $pdo->prepare($sql);
+
+if (!empty($search)) {
+    $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
+}
+
+$stmt->bindValue(':start', $start, PDO::PARAM_INT);
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+
+$stmt->execute();
+
+$commandes = $stmt->fetchAll();
+
+
+/* ===============================
+   INFORMATION AFFICHAGE
+================================= */
+
+$showingFrom = $totalRecords > 0 ? $start + 1 : 0;
+$showingTo = min($start + $limit, $totalRecords);
 
 ?>
 <!DOCTYPE html>
@@ -63,6 +137,9 @@ $idco=$co['idCom'];
     <meta name="author" content="">
 
     <title>BISIKOMASH - Facturation</title>
+    
+    <link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+    <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -118,8 +195,112 @@ $idco=$co['idCom'];
 
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
-<h1 class="h3 mb-4 text-gray-800">Facturation</h1>
+
+
+
+<nav>
+        <ul class="pagination justify-content-end">
+
+        <?php if ($page > 1): ?>
+            <li class="page-item">
+            <a class="page-link" href="?page=<?php echo $page-1; ?>">Previous</a>
+            </li>
+        <?php endif; ?>
+
+        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+            <li class="page-item <?php if ($i == $page) echo 'active'; ?>">
+            <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+            </li>
+        <?php endfor; ?>
+
+        <?php if ($page < $totalPages): ?>
+            <li class="page-item">
+            <a class="page-link" href="?page=<?php echo $page+1; ?>">Next</a>
+            </li>
+        <?php endif; ?>
+
+        </ul>
+</nav>
+
+<div class="card-header py-3 d-flex justify-content-between align-items-center">
+
+    <h6 class="m-0 font-weight-bold text-primary">
+        Facturation
+    </h6>
+
+    <div>
+
+        <!-- Bouton Actualiser -->
+        <a href="index.php" class="btn btn-secondary btn-sm mr-2">
+            <i class="fas fa-sync-alt"></i> Actualiser
+        </a>
+
+    </div>
+
+</div>
+ <!-- MESSAGES  -->
+
+<?php if (isset($_GET['deleted'])): ?>
+
+<div class="alert alert-success alert-dismissible fade show">
+
+    <i class="fas fa-check-circle"></i>
+    Facture supprimée avec succès.
+
+    <button type="button"
+            class="close"
+            data-dismiss="alert">
+        <span>&times;</span>
+    </button>
+
+</div>
+
+<script>
+
+if (window.location.search.includes("deleted")) {
+
+    const url = new URL(window.location);
+
+    url.searchParams.delete("deleted");
+
+    window.history.replaceState({}, document.title, url.pathname);
+
+}
+
+</script>
+
+
+
+
+<?php endif; ?>
 <table class="table table-bordered table-hover table-sm table-commandes">
+
+ <!-- RECHERCHE FACTURE  -->
+        <form method="GET">
+
+                    <div class="mb-4">
+
+                    <div class="input-group">
+
+                    <input type="text"
+                           class="form-control"
+                           name="txtRech"
+                          placeholder="Rechercher par client, société, téléphone, date..."
+                           value="<?php echo isset($_GET['txtRech']) ? htmlspecialchars($_GET['txtRech']) : ''; ?>">
+
+                    <div class="input-group-append">
+
+                    <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    </button>
+
+                    </div>
+
+                    </div>
+
+                    </div>
+
+            </form>
 
         <thead>
 
@@ -137,14 +318,15 @@ $idco=$co['idCom'];
             </tr>
 
 </thead>
+<?php $cpteur = 0; ?>
 
       <tbody>
 
-<?php while($row = $stmt->fetch(PDO::FETCH_ASSOC)) : $cpteur++ ?>
+<?php foreach ($commandes as $row): $cpteur++; ?>
 
 <tr>
 
-    <td><?php echo $cpteur ?></td>
+    <td><?php echo $cpteur; ?></td>
 
     <td><?php echo $row['datCom']; ?></td>
 
@@ -169,25 +351,50 @@ $idco=$co['idCom'];
 
     <td>
 
-            
-            
-            <a href="facture.php?clt=<?php echo $row['nom'].' '.$row['postnom'].' '.$row['prenom']; ?> 
-            &dat=<?php echo $row['datCom']; ?>&tel=<?php echo $row['tel']; ?>&idCom=<?php echo $row['idCom']; ?>" class="btn btn-primary btn-sm">
-            <i class="fas fa-file-invoice"></i>
-           
-            Facture
-        </a>
+    <!-- Bouton Facture -->
 
-    </td>
+    <a href="facture.php?clt=<?php echo $row['nom'].' '.$row['postnom'].' '.$row['prenom']; ?>
+    &dat=<?php echo $row['datCom']; ?>
+    &tel=<?php echo $row['tel']; ?>
+    &idCom=<?php echo $row['idCom']; ?>"
+
+    class="btn btn-primary btn-sm">
+
+        <i class="fas fa-file-invoice"></i>
+        Facture
+
+    </a>
+
+
+    <!-- Bouton Supprimer -->
+
+    <a href="deleteFacture.php?idCom=<?php echo $row['idCom']; ?>"
+       class="btn btn-danger btn-sm"
+       onclick="return confirm('Supprimer cette facture ?');">
+
+        <i class="fas fa-trash"></i>
+
+    </a>
+
+</td>
 
 </tr>
 
-<?php endwhile; ?>
+<?php endforeach; ?>
 
 </tbody>
 
 </table>
 
+<?php if(empty($commandes)): ?>
+
+<tr>
+<td colspan="8" class="text-center text-muted">
+Aucune facture trouvée
+</td>
+</tr>
+
+<?php endif; ?>
 
 <script>
 

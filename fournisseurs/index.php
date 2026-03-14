@@ -101,6 +101,8 @@ $showingTo = min($start + $limit, $totalRecords);
     <meta name="author" content="">
 
     <title>BISIKOMASH - Fournisseurs</title>
+    <link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+    <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
 
     <!-- Custom fonts for this template-->
 <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
@@ -166,7 +168,7 @@ $showingTo = min($start + $limit, $totalRecords);
     <div class="card shadow mb-4">
 
         <!-- Header -->
-       <div class="card-header py-3 d-flex justify-content-between align-items-center">
+<div class="card-header py-3 d-flex justify-content-between align-items-center">
 
     <h6 class="m-0 font-weight-bold text-primary">
         Gestion des Fournisseurs

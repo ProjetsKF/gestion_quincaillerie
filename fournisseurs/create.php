@@ -1,5 +1,8 @@
 <?php
+
 require_once '../bd/database.php';
+require_once '../log_activity.php';
+session_start();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -24,6 +27,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':denomSoc' => $denomSoc,
             ':tel'      => $tel
         ]);
+
+        /* enregistrer l'activité */
+
+        logActivity(
+            $pdo,
+            $_SESSION['user_id'],
+            "Création fournisseur",
+            "Nouveau fournisseur ajouté : ".$nom." ".$postnom
+        );
 
         // Redirection vers index avec message
         header("Location: index.php?success=1");

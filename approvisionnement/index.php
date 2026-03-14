@@ -177,12 +177,19 @@ $showingTo = min(
     <meta name="author" content="">
 
     <title>BISIKOMASH - Stock</title>
+    <link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+    <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
 
     <!-- Custom fonts for this template-->
 <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
     <link
         href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
         rel="stylesheet">
+
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
     <!-- Custom styles for this template-->
    <link href="../css/sb-admin-2.min.css" rel="stylesheet">
@@ -502,16 +509,33 @@ $showingTo = min(
 
                     <!-- Fournisseur -->
                     <div class="form-group">
-                        <label>Fournisseur *</label>
-                        <select name="idFourn" class="form-control" required>
-                            <option value="">-- Sélectionner un fournisseur --</option>
-                            <?php foreach ($fournisseurs as $f): ?>
-                                <option value="<?php echo $f['id']; ?>">
-                                    <?php echo htmlspecialchars($f['nom'] . ' ' . $f['postnom']); ?>
+
+                            <label for="fournisseur">
+                                Fournisseur *
+                            </label>
+
+                            <select name="idFourn"
+                                    id="fournisseur"
+                                    class="form-control select2"
+                                    required>
+
+                                <option value="">
+                                    Rechercher un fournisseur
                                 </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+
+                                <?php foreach ($fournisseurs as $f) { ?>
+
+                                    <option value="<?php echo $f['id']; ?>">
+
+                                        <?php echo $f['nom'] . ' ' . $f['postnom']; ?>
+
+                                    </option>
+
+                                <?php } ?>
+
+                            </select>
+
+                        </div>
 
                     <!-- Succursale -->
                     <div class="form-group">
@@ -589,6 +613,9 @@ $showingTo = min(
 <script src="../vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="../vendor/jquery-easing/jquery.easing.min.js"></script>
 <script src="../js/sb-admin-2.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 
@@ -602,6 +629,20 @@ $(document).on("click", ".btn-appro", function(){
     $("#produitNom").val(produit);
 
 });
+
+ $(document).ready(function(){
+
+    $('#fournisseur').select2({
+
+        placeholder: "Rechercher un fournisseur",
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#approModal')
+
+    });
+
+});
+
 
 </script>
 

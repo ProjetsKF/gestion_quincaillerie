@@ -1,5 +1,9 @@
 <?php
+
 require_once '../bd/database.php';
+require_once '../log_activity.php';
+
+session_start();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -31,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE idsuc = :idsuc";
 
         $stmt = $pdo->prepare($sql);
+
         $stmt->execute([
             ':nomSuc' => $nomSuc,
             ':Quart'  => $Quart,
@@ -38,6 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':Aven'   => $Aven,
             ':idsuc'  => $idsuc
         ]);
+
+        /* enregistrer l'activité */
+
+        logActivity(
+            $pdo,
+            $_SESSION['user_id'],
+            "Modification succursale",
+            "Succursale modifiée : ".$nomSuc
+        );
 
         header("Location: index.php?success=updated");
         exit;

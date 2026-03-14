@@ -64,8 +64,6 @@ $compteur=0;
 $dat=$co['datCom'];
 $tel=$co['tel'];
 
-
-
 ?>
 <!DOCTYPE html>
 <html lang="en">

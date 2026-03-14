@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'bd/database.php';
+require_once 'log_activity.php';
 
 $message = '';
 $message_type = '';
@@ -29,23 +30,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = "Mot de passe incorrect.";
                 $message_type = "error";
 
+                logActivity(
+                    $pdo,
+                    $user['idutil'],
+                    "Login Failed",
+                    "Mot de passe incorrect"
+                );
+
             }
 
-            /* Vérifier si compte suspendu */
+            /* Compte suspendu */
 
             elseif ($user['statut'] === 'Suspendu') {
 
                 $message = "Votre compte est suspendu. Contactez l'administrateur.";
                 $message_type = "error";
 
+                logActivity(
+                    $pdo,
+                    $user['idutil'],
+                    "Login Blocked",
+                    "Compte suspendu"
+                );
+
             }
 
-            /* Vérifier si compte en attente */
+            /* Compte en attente */
 
             elseif ($user['statut'] === 'En attente') {
 
                 $message = "Votre compte est en attente de validation.";
                 $message_type = "error";
+
+                logActivity(
+                    $pdo,
+                    $user['idutil'],
+                    "Login Blocked",
+                    "Compte en attente"
+                );
 
             }
 
@@ -60,15 +82,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = $user['rol'];
                 $_SESSION['idsuc'] = $user['idSuc'];
 
+                logActivity(
+                    $pdo,
+                    $user['idutil'],
+                    "Login Success",
+                    "Connexion réussie"
+                );
+
                 header("Location: dashboard.php");
                 exit;
-
-            }
-
-            else {
-
-                $message = "Statut du compte inconnu.";
-                $message_type = "error";
 
             }
 
@@ -99,6 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <title>BISIKOMASH - Connexion</title>
+
+    <link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+    <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
 
     <!-- Fonts -->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">

@@ -83,6 +83,8 @@ $appros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>BISIKOMASH - Fixation de prix</title>
+<link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+ <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
 
 <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
 <link href="../css/sb-admin-2.min.css" rel="stylesheet">

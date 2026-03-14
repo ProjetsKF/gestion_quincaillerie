@@ -1,5 +1,9 @@
 <?php
+
 require_once '../bd/database.php';
+require_once '../log_activity.php';
+
+session_start();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -38,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt = $pdo->prepare($sql);
 
-        $stmt->execute(array(
+        $stmt->execute([
             ':Qte'      => $Qte,
             ':unitMes'  => $unitMes,
             ':pu'       => $pu,
@@ -47,7 +51,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':unitMon'  => $unitMon,
             ':datAprov' => $datAprov,
             ':idSuc'    => $idSuc
-        ));
+        ]);
+
+        /* ===============================
+           3️⃣ Enregistrer l'activité
+        =============================== */
+
+        logActivity(
+            $pdo,
+            $_SESSION['user_id'],
+            "Ajout approvisionnement",
+            "Entrée de stock : Produit ID ".$idProd." | Quantité : ".$Qte
+        );
 
         header("Location: stock.php?success=1");
         exit;

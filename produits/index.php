@@ -57,6 +57,9 @@ $prod = $res->fetchAll();
 
     <title>BISIKOMASH - Produits</title>
 
+    <link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+    <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+
     <!-- Custom fonts for this template-->
 <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
     <link
@@ -121,6 +124,7 @@ $prod = $res->fetchAll();
         </div>
 
         <!-- Body -->
+         <!-- Barre de recherche -->
         <div class="card-body">
             <form method="post" action="recherche.php">
                 <div class="mb-4">
@@ -137,8 +141,103 @@ $prod = $res->fetchAll();
                 
             </form>
 
-            <!-- Barre de recherche -->
+           
             
+            <!-- MESSAGE DE CONFIRMATION -->
+
+            <?php if (isset($_GET['deleted'])): ?>
+
+                <div class="alert alert-success alert-dismissible fade show">
+
+                    <i class="fas fa-check-circle"></i>
+                    Produit supprimé avec succès.
+
+                    <button type="button"
+                            class="close"
+                            data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+
+                </div>
+
+                <script>
+
+                if (window.location.search.includes("deleted")) {
+
+                    const url = new URL(window.location);
+
+                    url.searchParams.delete("deleted");
+
+                    window.history.replaceState({}, document.title, url.pathname);
+
+                }
+
+                </script>
+
+                <?php endif; ?>
+
+
+                <?php if (isset($_GET['updated'])): ?>
+
+                    <div class="alert alert-success alert-dismissible fade show">
+
+                        <i class="fas fa-check-circle"></i>
+                        Produit modifié avec succès.
+
+                        <button type="button"
+                                class="close"
+                                data-dismiss="alert">
+                            <span>&times;</span>
+                        </button>
+
+                    </div>
+
+                    <script>
+
+                    if (window.location.search.includes("updated")) {
+
+                        const url = new URL(window.location);
+
+                        url.searchParams.delete("updated");
+
+                        window.history.replaceState({}, document.title, url.pathname);
+
+                    }
+
+                    </script>
+
+                    <?php endif; ?>
+
+                        <?php if (isset($_GET['added'])): ?>
+
+                        <div class="alert alert-success alert-dismissible fade show">
+
+                            <i class="fas fa-check-circle"></i>
+                            Produit ajouté avec succès.
+
+                            <button type="button"
+                                    class="close"
+                                    data-dismiss="alert">
+                                <span>&times;</span>
+                            </button>
+
+                        </div>
+
+                        <script>
+
+                        if (window.location.search.includes("added")) {
+
+                            const url = new URL(window.location);
+
+                            url.searchParams.delete("added");
+
+                            window.history.replaceState({}, document.title, url.pathname);
+
+                        }
+
+                        </script>
+
+                        <?php endif; ?>
 
             <!-- Tableau -->
             <div class="table-responsive">
@@ -153,22 +252,47 @@ $prod = $res->fetchAll();
                         </tr>
                     </thead>
 
-                    <tbody>
-                        <?php foreach ($prod as $pr) : ?>
-                        <tr>
-                            <td><?= htmlspecialchars($pr['idprod']) ?></td>
-                            <td><?= htmlspecialchars($pr['designP']) ?></td>
-                            <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
-                            <td class="text-center">
-                                <a href="#" class="text-primary mr-3">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="#" class="text-danger">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
+                   <tbody>
+
+                    <?php foreach ($prod as $pr) : ?>
+
+                    <tr>
+
+                        <td><?= htmlspecialchars($pr['idprod']) ?></td>
+                        <td><?= htmlspecialchars($pr['designP']) ?></td>
+                        <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
+
+                        <td class="text-center">
+
+                            <!-- Modifier -->
+                            <a href="#"
+                               class="text-primary mr-3 btn-edit"
+                               data-toggle="modal"
+                               data-target="#editProduitModal"
+                               data-id="<?= $pr['idprod'] ?>"
+                               data-design="<?= htmlspecialchars($pr['designP']) ?>"
+                               data-caract="<?= htmlspecialchars($pr['caractProduit']) ?>"
+                               title="Modifier">
+
+                                <i class="fas fa-edit"></i>
+
+                            </a>
+
+                            <!-- Supprimer -->
+                            <a href="../produits/deleteProduit.php?id=<?= $pr['idprod'] ?>"
+                               class="text-danger"
+                               title="Supprimer"
+                               onclick="return confirm('Supprimer ce produit ?');">
+
+                                <i class="fas fa-trash"></i>
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    <?php endforeach; ?>
 
                     </tbody>
                 </table>
@@ -341,10 +465,103 @@ Suivant
         </div>
     </div>
 </div>
+
+<!-- Modal Modifier Produit -->
+
+<div class="modal fade" id="editProduitModal" tabindex="-1">
+
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Modifier Produit
+                </h5>
+
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+
+            </div>
+
+            <form method="POST" action="updateProduit.php">
+
+                <div class="modal-body">
+
+                    <input type="hidden" name="idprod" id="edit_idprod">
+
+                    <div class="form-group">
+
+                        <label>Désignation *</label>
+
+                        <input type="text"
+                               class="form-control"
+                               name="designP"
+                               id="edit_designP"
+                               required>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>Caractéristiques</label>
+
+                        <textarea class="form-control"
+                                  name="caractProduit"
+                                  id="edit_caractProduit"
+                                  rows="3"></textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Mettre à jour
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-dismiss="modal">
+
+                        Annuler
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
    <script src="../vendor/jquery/jquery.min.js"></script>
 <script src="../vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="../vendor/jquery-easing/jquery.easing.min.js"></script>
 <script src="../js/sb-admin-2.min.js"></script>
+
+<script>
+
+document.querySelectorAll('.btn-edit').forEach(button => {
+
+    button.addEventListener('click', function(){
+
+        const id = this.getAttribute('data-id');
+        const design = this.getAttribute('data-design');
+        const caract = this.getAttribute('data-caract');
+
+        document.getElementById('edit_idprod').value = id;
+        document.getElementById('edit_designP').value = design;
+        document.getElementById('edit_caractProduit').value = caract;
+
+    });
+
+});
+
+</script>
 
 </body>
 

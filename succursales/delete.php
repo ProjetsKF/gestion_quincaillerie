@@ -1,5 +1,9 @@
 <?php
+
 require_once '../bd/database.php';
+require_once '../log_activity.php';
+
+session_start();
 
 /* ===============================
    1️⃣ Vérification paramètre
@@ -30,6 +34,16 @@ $check = $pdo->prepare("
 $check->execute([':idsuc' => $idsuc]);
 
 if ($check->rowCount() > 0) {
+
+    /* enregistrer l'activité */
+
+    logActivity(
+        $pdo,
+        $_SESSION['user_id'],
+        "Suppression succursale refusée",
+        "Tentative de suppression d'une succursale utilisée (ID : ".$idsuc.")"
+    );
+
     header("Location: index.php?error=used");
     exit;
 }
@@ -44,6 +58,15 @@ $delete = $pdo->prepare("
 ");
 
 $delete->execute([':idsuc' => $idsuc]);
+
+/* enregistrer l'activité */
+
+logActivity(
+    $pdo,
+    $_SESSION['user_id'],
+    "Suppression succursale",
+    "Succursale supprimée (ID : ".$idsuc.")"
+);
 
 header("Location: index.php?success=deleted");
 exit;

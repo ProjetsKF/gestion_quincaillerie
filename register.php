@@ -97,6 +97,8 @@ $suc = $res->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <title>BISIKOMASH - Inscription</title>
+    <link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+    <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
 
     <!-- Fonts -->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
