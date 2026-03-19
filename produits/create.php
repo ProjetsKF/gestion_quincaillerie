@@ -12,28 +12,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $designP = trim($_POST['designP']);
     $caractProduit = trim($_POST['caractProduit']);
+    $seuil_min = isset($_POST['seuil_min']) ? (int) $_POST['seuil_min'] : 0;
 
-    if ($designP && $caractProduit) {
+    // Validation
+    if ($designP && $caractProduit && $seuil_min >= 0) {
 
         $sql = "INSERT INTO produit
-                (designP, caractProduit)
+                (designP, caractProduit, seuil_min)
                 VALUES
-                (:designP, :caractProduit)";
+                (:designP, :caractProduit, :seuil_min)";
 
         $stmt = $pdo->prepare($sql);
 
         $stmt->execute([
             ':designP' => $designP,
-            ':caractProduit' => $caractProduit
+            ':caractProduit' => $caractProduit,
+            ':seuil_min' => $seuil_min
         ]);
 
         /* enregistrer l'activité */
-
         logActivity(
             $pdo,
             $_SESSION['user_id'],
             "Création produit",
-            "Nouveau produit ajouté : ".$designP
+            "Nouveau produit ajouté : ".$designP." (Seuil min: ".$seuil_min.")"
         );
 
         header("Location: index.php?added=1");
@@ -41,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } else {
 
-        $message = "Tous les champs sont obligatoires.";
+        $message = "Tous les champs sont obligatoires et le seuil doit être valide.";
         $message_type = 'error';
 
     }

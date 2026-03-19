@@ -6,7 +6,7 @@
    class="sidebar-brand" 
    style="padding:0 !important; height:auto !important; min-height:unset !important;">
 
-    <img src="/gestion_quincaillerie/img/bisikomashLogo1.PNG" 
+    <img src="/gestion_quincaillerie/img/bisikomashLogo.PNG" 
          alt="Bisikomash Logo"
          style="width:100%; height:90px; object-fit:contain; display:block;">
 

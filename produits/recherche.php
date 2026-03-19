@@ -22,20 +22,31 @@ require_once '../bd/database.php';
 $motCle = '';
 
 if(isset($_POST['btnRecherche'])){
-
     $motCle = trim($_POST['txtRech']);
-
 }
 
-$sql = "SELECT * FROM produit
-        WHERE designP LIKE :motcle
-        OR caractProduit LIKE :motcle
+/* ================= REQUÊTE AVEC STOCK + SEUIL ================= */
+
+$sql = "SELECT 
+            p.idprod,
+            p.designP,
+            p.caractProduit,
+            p.seuil_min,
+            COALESCE(SUM(a.Qte), 0) AS total_appro
+        FROM produit p
+        LEFT JOIN approvisionnement a ON p.idprod = a.idProd
+        WHERE 
+            p.designP LIKE :motcle
+            OR p.caractProduit LIKE :motcle
+            OR p.seuil_min LIKE :motcle
+        GROUP BY p.idprod
+        ORDER BY p.idprod DESC
         LIMIT 5";
 
 $req = $pdo->prepare($sql);
 
 $req->execute([
-':motcle' => "%$motCle%"
+    ':motcle' => "%$motCle%"
 ]);
 
 $prod = $req->fetchAll(PDO::FETCH_ASSOC);
@@ -146,39 +157,70 @@ $prod = $req->fetchAll(PDO::FETCH_ASSOC);
             <!-- Barre de recherche -->
             
 
-            <!-- Tableau -->
-            <div class="table-responsive">
-                <?php if (count($prod) > 0) : ?>
-                <table class="table table-hover align-items-center">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>Désignation</th>
-                            <th>Caractéristiques</th>
-                            <th class="text-center">Actions</th>
-                        </tr>
-                    </thead>
+         <!-- Tableau -->
+<div class="table-responsive">
+    <?php if (count($prod) > 0) : ?>
+    <table class="table table-hover align-items-center">
+        <thead class="thead-light">
+            <tr>
+                <th>ID</th>
+                <th>Désignation</th>
+                <th>Caractéristiques</th>
+                <th>Stock</th>
+                <th>Statut</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
 
-                    <tbody>
-                        <?php foreach ($prod as $pr) : ?>
-                        <tr>
-                            <td><?= htmlspecialchars($pr['idprod']) ?></td>
-                            <td><?= htmlspecialchars($pr['designP']) ?></td>
-                            <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
-                            <td class="text-center">
-                                <a href="#" class="text-primary mr-3">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="#" class="text-danger">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <?php endif; ?>
-            </div>
+        <tbody>
+        <?php foreach ($prod as $pr) : 
+
+            $stock = $pr['total_appro'];
+            $seuil = $pr['seuil_min'];
+
+            // Détermination statut + couleur
+            if ($stock == 0) {
+                $status = '<span class="badge badge-danger">Rupture</span>';
+                $rowClass = 'table-danger';
+            } elseif ($stock <= $seuil) {
+                $status = '<span class="badge badge-warning">Faible</span>';
+                $rowClass = 'table-warning';
+            } else {
+                $status = '<span class="badge badge-success">OK</span>';
+                $rowClass = '';
+            }
+
+        ?>
+
+        <tr class="<?= $rowClass ?>">
+
+            <td><?= htmlspecialchars($pr['idprod']) ?></td>
+            <td><?= htmlspecialchars($pr['designP']) ?></td>
+            <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
+
+            <!-- STOCK -->
+            <td><?= htmlspecialchars($stock) ?></td>
+
+            <!-- STATUT -->
+            <td><?= $status ?></td>
+
+            <!-- ACTIONS -->
+            <td class="text-center">
+                <a href="#" class="text-primary mr-3">
+                    <i class="fas fa-edit"></i>
+                </a>
+                <a href="#" class="text-danger">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </td>
+
+        </tr>
+
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php endif; ?>
+</div>
 
         </div>
     </div>

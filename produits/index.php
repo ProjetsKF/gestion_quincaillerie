@@ -3,6 +3,7 @@
 session_start();
 
 require_once '../bd/database.php';
+
 /* ===============================
    PAGINATION PRODUITS
 ================================= */
@@ -20,18 +21,29 @@ if ($page < 1) {
 /* Calcul OFFSET */
 $offset = ($page - 1) * $limit;
 
-/* Compter le nombre total de produits */
+/* ===============================
+   TOTAL PRODUITS (SANS GROUP BY)
+================================= */
 $countQuery = $pdo->query("SELECT COUNT(*) FROM produit");
 $totalProducts = $countQuery->fetchColumn();
 
-/* Calcul du nombre total de pages */
+/* Nombre total de pages */
 $totalPages = ceil($totalProducts / $limit);
 
+/* ===============================
+   REQUÊTE PRODUITS + STOCK
+================================= */
 
-/* Requête avec LIMIT */
-$sql = "SELECT * 
-        FROM produit
-        ORDER BY idprod DESC
+$sql = "SELECT 
+            p.idprod,
+            p.designP,
+            p.caractProduit,
+            p.seuil_min,
+            COALESCE(SUM(a.Qte), 0) AS total_appro
+        FROM produit p
+        LEFT JOIN approvisionnement a ON p.idprod = a.idProd
+        GROUP BY p.idprod
+        ORDER BY p.idprod DESC
         LIMIT :limit OFFSET :offset";
 
 $res = $pdo->prepare($sql);
@@ -42,8 +54,8 @@ $res->bindValue(':offset', $offset, PDO::PARAM_INT);
 $res->execute();
 
 $prod = $res->fetchAll();
-?>
 
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -248,55 +260,84 @@ $prod = $res->fetchAll();
                             <th>ID</th>
                             <th>Désignation</th>
                             <th>Caractéristiques</th>
+                            <th>Stock</th>
+                            <th>Statut</th>
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
 
-                   <tbody>
+                  <tbody>
 
-                    <?php foreach ($prod as $pr) : ?>
+<?php foreach ($prod as $pr) : 
 
-                    <tr>
+    $stock = $pr['total_appro'];
+    $seuil = $pr['seuil_min'];
 
-                        <td><?= htmlspecialchars($pr['idprod']) ?></td>
-                        <td><?= htmlspecialchars($pr['designP']) ?></td>
-                        <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
+    // Détermination du statut + couleur ligne
+    if ($stock == 0) {
+        $status = '<span class="badge badge-danger">Rupture</span>';
+        $rowClass = 'table-danger';
+    } elseif ($stock <= $seuil) {
+        $status = '<span class="badge badge-warning">Faible</span>';
+        $rowClass = 'table-warning';
+    } else {
+        $status = '<span class="badge badge-success">OK</span>';
+        $rowClass = '';
+    }
 
-                        <td class="text-center">
+?>
 
-                            <!-- Modifier -->
-                            <a href="#"
-                               class="text-primary mr-3 btn-edit"
-                               data-toggle="modal"
-                               data-target="#editProduitModal"
-                               data-id="<?= $pr['idprod'] ?>"
-                               data-design="<?= htmlspecialchars($pr['designP']) ?>"
-                               data-caract="<?= htmlspecialchars($pr['caractProduit']) ?>"
-                               title="Modifier">
+<tr class="<?= $rowClass ?>">
 
-                                <i class="fas fa-edit"></i>
+    <td><?= htmlspecialchars($pr['idprod']) ?></td>
+    <td><?= htmlspecialchars($pr['designP']) ?></td>
+    <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
 
-                            </a>
+    <!-- STOCK -->
+    <td><?= htmlspecialchars($stock) ?></td>
 
-                            <!-- Supprimer -->
-                            <a href="../produits/deleteProduit.php?id=<?= $pr['idprod'] ?>"
-                               class="text-danger"
-                               title="Supprimer"
-                               onclick="return confirm('Supprimer ce produit ?');">
+    <!-- STATUT -->
+    <td><?= $status ?></td>
 
-                                <i class="fas fa-trash"></i>
+    <!-- ACTIONS -->
+    <td class="text-center">
 
-                            </a>
+        <!-- Modifier -->
+      <a href="#"
+               class="text-primary mr-3 btn-edit"
+               data-toggle="modal"
+               data-target="#editProduitModal"
+               data-id="<?= $pr['idprod'] ?>"
+               data-design="<?= htmlspecialchars($pr['designP']) ?>"
+               data-caract="<?= htmlspecialchars($pr['caractProduit']) ?>"
+               data-seuil="<?= $pr['seuil_min'] ?>"
+               title="Modifier">
 
-                        </td>
+            <i class="fas fa-edit"></i>
 
-                    </tr>
+        </a>
 
-                    <?php endforeach; ?>
+        <!-- Supprimer -->
+        <a href="../produits/deleteProduit.php?id=<?= $pr['idprod'] ?>"
+           class="text-danger"
+           title="Supprimer"
+           onclick="return confirm('Supprimer ce produit ?');">
 
-                    </tbody>
-                </table>
-                <?php endif; ?>
+            <i class="fas fa-trash"></i>
+
+        </a>
+
+    </td>
+
+    </tr>
+
+    <?php endforeach; ?>
+
+    </tbody>
+
+</table>
+
+<?php endif; ?>
             </div>
 
             <div class="d-flex justify-content-center mt-3">
@@ -392,7 +433,7 @@ Suivant
     </div>
 
 
-  <!-- Modal Ajout Produit -->
+ <!-- Modal Ajout Produit -->
 <div class="modal fade" id="produitModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-lg rounded">
@@ -422,24 +463,36 @@ Suivant
                         </span>
                     </div>
                 <?php endif; ?>
-                
 
-
+                <!-- FORMULAIRE CORRECT -->
                 <form method="post" action="create.php">
-
-                <form method="post">
 
                     <div class="form-group">
                         <label>Désignation *</label>
                         <input type="text" class="form-control" name="designP" 
-                               placeholder="Ex: Clou 3 pouces">
+                               placeholder="Ex: Clou 3 pouces" required>
                     </div>
 
                     <div class="form-group">
                         <label>Caractéristiques</label>
                         <textarea class="form-control"
                                   rows="3"
-                                  placeholder="Ex: Acier galvanisé, 3 pouces" name="caractProduit"></textarea>
+                                  placeholder="Ex: Acier galvanisé, 3 pouces" 
+                                  name="caractProduit"></textarea>
+                    </div>
+
+                    <!-- ✅ NOUVEAU CHAMP SEUIL MIN -->
+                    <div class="form-group">
+                        <label>Seuil minimum *</label>
+                        <input type="number" 
+                               class="form-control" 
+                               name="seuil_min"
+                               min="0"
+                               value="5"
+                               required>
+                        <small class="form-text text-muted">
+                            Stock minimum avant alerte
+                        </small>
                     </div>
 
                     <div class="modal-footer border-0">
@@ -460,14 +513,11 @@ Suivant
 
             </div>
 
-            
-
         </div>
     </div>
 </div>
 
 <!-- Modal Modifier Produit -->
-
 <div class="modal fade" id="editProduitModal" tabindex="-1">
 
     <div class="modal-dialog">
@@ -492,26 +542,31 @@ Suivant
                     <input type="hidden" name="idprod" id="edit_idprod">
 
                     <div class="form-group">
-
                         <label>Désignation *</label>
-
                         <input type="text"
                                class="form-control"
                                name="designP"
                                id="edit_designP"
                                required>
-
                     </div>
 
                     <div class="form-group">
-
                         <label>Caractéristiques</label>
-
                         <textarea class="form-control"
                                   name="caractProduit"
                                   id="edit_caractProduit"
                                   rows="3"></textarea>
+                    </div>
 
+                    <!-- ✅ NOUVEAU CHAMP -->
+                    <div class="form-group">
+                        <label>Seuil minimum *</label>
+                        <input type="number"
+                               class="form-control"
+                               name="seuil_min"
+                               id="edit_seuil_min"
+                               min="0"
+                               required>
                     </div>
 
                 </div>
@@ -525,9 +580,7 @@ Suivant
                     <button type="button"
                             class="btn btn-secondary"
                             data-dismiss="modal">
-
                         Annuler
-
                     </button>
 
                 </div>
@@ -552,10 +605,12 @@ document.querySelectorAll('.btn-edit').forEach(button => {
         const id = this.getAttribute('data-id');
         const design = this.getAttribute('data-design');
         const caract = this.getAttribute('data-caract');
+        const seuil = this.getAttribute('data-seuil');
 
         document.getElementById('edit_idprod').value = id;
         document.getElementById('edit_designP').value = design;
         document.getElementById('edit_caractProduit').value = caract;
+        document.getElementById('edit_seuil_min').value = seuil;
 
     });
 
