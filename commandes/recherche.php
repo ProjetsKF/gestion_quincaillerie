@@ -27,7 +27,7 @@ if(isset($_POST['btnRecherche'])){
 
 }
 
-$sql = "SELECT Produit.idprod,designP,caractProduit,fixationprix.pu,fixationprix.unitMon,approvisionnement.unitMes FROM produit INNER join approvisionnement on produit.idprod=approvisionnement.idProd inner join fixationprix on approvisionnement.idAprov=fixationprix.IdApprov
+$sql = "SELECT Produit.idprod,designP,caractProduit,fixationprix.pu,fixationprix.unitMon,approvisionnement.unitMes,approvisionnement.idAprov FROM produit INNER join approvisionnement on produit.idprod=approvisionnement.idProd inner join fixationprix on approvisionnement.idAprov=fixationprix.IdApprov
         WHERE designP LIKE :motcle
         OR caractProduit LIKE :motcle
         LIMIT 5";
@@ -166,7 +166,7 @@ $prod = $req->fetchAll(PDO::FETCH_ASSOC);
                             <td><?= htmlspecialchars($pr['designP']) ?></td>
                             <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
                             <td class="text-center">
-                                <a href="../commandes/creationCmdeDet.php?idclt=<?= $_GET['idclt'] ?>&idcmd=<?= $_GET['idcmd'] ?>&prod=<?= $pr['designP'].' '.$pr['caractProduit'] ?>&unitMes=<?= $pr['unitMes'] ?>" class="btn-edit"   
+                                <a href="../commandes/creationCmdeDet.php?idclt=<?= $_GET['idclt'] ?>&idcmd=<?= $_GET['idcmd'] ?>&prod=<?= $pr['designP'].' '.$pr['caractProduit'] ?>&unitMes=<?= $pr['unitMes'] ?>&idApp=<?= $pr['idAprov'] ?>" class="btn-edit"   
                                         >
                                     <i class="fas fa-shopping-cart mr-2"></i>
                                 </a>

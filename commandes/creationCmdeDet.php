@@ -22,20 +22,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $Qte = trim($_POST['Qte']);
     $unitMes = trim($_POST['unitMes']);
     $idprod = $_GET['prod'];
+    $idApprov = $_GET['idApp'];
 
     if ($Qte && $unitMes) {
 
         $sql = "INSERT INTO detailscommande
-                (idcom, idprod,Qte,unitMes)
+                (idcom, idprod,Qte,unitMes,idApprov)
                 VALUES
-                (:idCom,(SELECT idprod from Produit where CONCAT(designP,' ',caractProduit)=:idprod ),:Qte,:unitMes)";
+                (:idCom,(SELECT idprod from Produit where CONCAT(designP,' ',caractProduit)=:idprod ),:Qte,:unitMes,:idApprov)";
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':idCom'        =>$_GET['idcmd'],
             ':idprod'       => $_GET['prod'],
             ':Qte'          => $Qte,
-            ':unitMes'      => $unitMes
+            ':unitMes'      => $unitMes,
+            ':idApprov'      => $idApprov
         ]);
 
         $message = "Produit enregistré avec succès.";

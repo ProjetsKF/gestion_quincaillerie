@@ -1,0 +1,8 @@
+ALTER TABLE produit ADD CONSTRAINT uq_prod UNIQUE (designP,caractProduit);
+
+ALTER TABLE `detailscommande` ADD `idApprov` INT NOT NULL AFTER `unitMes`;
+
+ALTER TABLE `detailscommande` ADD  CONSTRAINT `fk_detCom_Approv` FOREIGN KEY (`idApprov`) REFERENCES `approvisionnement`(`idAprov`);
+
+ALTER TABLE `detailscommande` ADD `id` INT NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`);
+

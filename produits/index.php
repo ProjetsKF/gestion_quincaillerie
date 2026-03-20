@@ -46,14 +46,25 @@ $sql = "SELECT
         ORDER BY p.idprod DESC
         LIMIT :limit OFFSET :offset";
 
+$sqlCom = "SELECT *,tot_Approv-tot_Com as Stock from (SELECT idprod,designP,caractProduit,seuil_min,CASE WHEN tot_Approv is null then 0 else tot_Approv end as tot_Approv, CASE WHEN tot_Com is null then 0 else tot_Com end as tot_Com from(SELECT produit.idprod,designP,caractProduit, sum(approvisionnement.Qte)as tot_Approv,sum(detailscommande.Qte)as tot_Com,seuil_min from approvisionnement LEFT JOIN produit ON approvisionnement.idProd= produit.idprod LEFT JOIN detailscommande on approvisionnement.idAprov= detailscommande.idApprov group by designP,caractProduit)rqt)rqt            
+        LIMIT :limit OFFSET :offset";
+
 $res = $pdo->prepare($sql);
+$compteur=0;
+
+$resCom = $pdo->prepare($sqlCom);
 
 $res->bindValue(':limit', $limit, PDO::PARAM_INT);
 $res->bindValue(':offset', $offset, PDO::PARAM_INT);
 
+$resCom->bindValue(':limit', $limit, PDO::PARAM_INT);
+$resCom->bindValue(':offset', $offset, PDO::PARAM_INT);
+
 $res->execute();
+$resCom->execute();
 
 $prod = $res->fetchAll();
+$prodCom = $resCom->fetchAll();
 
 ?>
 <!DOCTYPE html>
@@ -268,9 +279,8 @@ $prod = $res->fetchAll();
 
                   <tbody>
 
-<?php foreach ($prod as $pr) : 
-
-    $stock = $pr['total_appro'];
+<?php foreach ($prodCom as $pr) : $compteur++;
+    $stock = $pr['tot_Approv']-$pr['tot_Com'];
     $seuil = $pr['seuil_min'];
 
     // Détermination du statut + couleur ligne
@@ -289,7 +299,7 @@ $prod = $res->fetchAll();
 
 <tr class="<?= $rowClass ?>">
 
-    <td><?= htmlspecialchars($pr['idprod']) ?></td>
+    <td><?= htmlspecialchars($compteur) ?></td>
     <td><?= htmlspecialchars($pr['designP']) ?></td>
     <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
 
@@ -330,7 +340,7 @@ $prod = $res->fetchAll();
     </td>
 
     </tr>
-
+        
     <?php endforeach; ?>
 
     </tbody>
