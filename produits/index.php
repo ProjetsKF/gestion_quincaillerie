@@ -46,8 +46,8 @@ $sql = "SELECT
         ORDER BY p.idprod DESC
         LIMIT :limit OFFSET :offset";
 
-$sqlCom = "SELECT *,tot_Approv-tot_Com as Stock from (SELECT idprod,designP,caractProduit,seuil_min,CASE WHEN tot_Approv is null then 0 else tot_Approv end as tot_Approv, CASE WHEN tot_Com is null then 0 else tot_Com end as tot_Com from(SELECT produit.idprod,designP,caractProduit, sum(approvisionnement.Qte)as tot_Approv,sum(detailscommande.Qte)as tot_Com,seuil_min from approvisionnement LEFT JOIN produit ON approvisionnement.idProd= produit.idprod LEFT JOIN detailscommande on approvisionnement.idAprov= detailscommande.idApprov group by designP,caractProduit)rqt)rqt            
-        LIMIT :limit OFFSET :offset";
+$sqlCom = "SELECT designP,caractProduit,seuil_min,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as Stock FROM produit p LEFT JOIN (SELECT idprod,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod)a On p.idprod=a.idProd LEFT join (SELECT idprod,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod)c ON p.idprod=c.idprod  
+    LIMIT :limit OFFSET :offset";
 
 $res = $pdo->prepare($sql);
 $compteur=0;
@@ -280,7 +280,7 @@ $prodCom = $resCom->fetchAll();
                   <tbody>
 
 <?php foreach ($prodCom as $pr) : $compteur++;
-    $stock = $pr['tot_Approv']-$pr['tot_Com'];
+    $stock = $pr['Stock'];
     $seuil = $pr['seuil_min'];
 
     // Détermination du statut + couleur ligne

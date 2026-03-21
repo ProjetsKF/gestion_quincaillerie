@@ -17,6 +17,17 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
 $message = '';
 $message_type = '';
 
+$sqlCom = "SELECT tot_Approv-tot_Com as Stock from (SELECT idprod,designP,caractProduit,seuil_min,CASE WHEN tot_Approv is null then 0 else tot_Approv end as tot_Approv, CASE WHEN tot_Com is null then 0 else tot_Com end as tot_Com from(SELECT produit.idprod,designP,caractProduit, sum(approvisionnement.Qte)as tot_Approv,sum(detailscommande.Qte)as tot_Com,seuil_min from approvisionnement LEFT JOIN produit ON approvisionnement.idProd= produit.idprod LEFT JOIN detailscommande on approvisionnement.idAprov= detailscommande.idApprov group by designP,caractProduit)rqt)rqt   
+    WHERE CONCAT(designP,' ',caractProduit)=:designP";
+
+$verQte= $pdo->prepare($sqlCom);
+$verQte->execute([
+    ':designP'       =>$_GET['prod']
+]);
+
+$ver = $verQte->fetchAll(PDO::FETCH_ASSOC);
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $Qte = trim($_POST['Qte']);
@@ -24,14 +35,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idprod = $_GET['prod'];
     $idApprov = $_GET['idApp'];
 
-    if ($Qte && $unitMes) {
 
-        $sql = "INSERT INTO detailscommande
+    if ($Qte && $unitMes) {
+        if($ver<=$Qte){
+            $message = "Quantité supérieure.";
+            $message_type = 'error';
+        }
+        else{
+            $sql = "INSERT INTO detailscommande
                 (idcom, idprod,Qte,unitMes,idApprov)
                 VALUES
                 (:idCom,(SELECT idprod from Produit where CONCAT(designP,' ',caractProduit)=:idprod ),:Qte,:unitMes,:idApprov)";
-
-        $stmt = $pdo->prepare($sql);
+                $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':idCom'        =>$_GET['idcmd'],
             ':idprod'       => $_GET['prod'],
@@ -43,12 +58,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = "Produit enregistré avec succès.";
         $message_type = 'success';
         header('Location:../commandes/produits.php?idclt='.$_GET['idclt'].'&idcmd='.$_GET['idcmd']);
+        }
 
     } else {
         $message = "Tous les champs sont obligatoires.";
         $message_type = 'error';
+      
     }
+
+        
 }
+
 
 
 /* ===============================
@@ -151,7 +171,6 @@ $prod = $res->fetchAll();
             <!-- Tableau -->
             <div class="table-responsive">
                 <form method="post">
-
                     <div class="form-group">
                         <label>Quantité *</label>
                         <input type="text" class="form-control" name="Qte" 
@@ -180,8 +199,7 @@ $prod = $res->fetchAll();
                                             var button=$(event.relatedTarget);
                                             var recId=button.data('id');
                                             var modal=$(this).prop('id');
-                                            modal.find('#targetInput').val(recId);
-                                        
+                                            modal.find('#targetInput').val(recId);  
                                     });
                                  });
                                    
@@ -207,8 +225,9 @@ $prod = $res->fetchAll();
                         </button>
 
                     </div>
-
+                   
                 </form>
+                
             </div>
 
         </div>
