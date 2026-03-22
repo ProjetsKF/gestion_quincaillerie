@@ -1,33 +1,58 @@
 <?php
 
 require_once '../bd/database.php';
-
-/* Vérification admin */
-
 require_once '../auth_admin.php';
 
-/* Nombre d'enregistrements par page */
+/* ===============================
+   PAGINATION
+================================= */
+
 $limit = 10;
 
-/* Page actuelle */
 $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 
 if ($page < 1) {
     $page = 1;
 }
 
-/* Calcul OFFSET */
 $offset = ($page - 1) * $limit;
 
-/* Total des enregistrements */
-$totalQuery = $pdo->query("SELECT COUNT(*) FROM approvisionnement");
-$totalRows = $totalQuery->fetchColumn();
+/* ===============================
+   RECHERCHE
+================================= */
 
-/* Nombre total de pages */
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+/* ===============================
+   COMPTER LES RÉSULTATS
+================================= */
+
+$sqlCount = "SELECT COUNT(*) 
+             FROM approvisionnement a
+             INNER JOIN produit p ON a.idProd = p.idprod
+             INNER JOIN fournisseur f ON a.idFourn = f.id";
+
+if (!empty($search)) {
+    $sqlCount .= " WHERE p.designP LIKE :search
+                   OR f.nom LIKE :search
+                   OR f.postnom LIKE :search";
+}
+
+$stmtCount = $pdo->prepare($sqlCount);
+
+if (!empty($search)) {
+    $stmtCount->bindValue(':search', "%$search%", PDO::PARAM_STR);
+}
+
+$stmtCount->execute();
+$totalRows = $stmtCount->fetchColumn();
+
 $totalPages = ceil($totalRows / $limit);
 
+/* ===============================
+   REQUÊTE PRINCIPALE
+================================= */
 
-/* Requête principale avec LIMIT */
 $sql = "
 
 SELECT 
@@ -52,23 +77,33 @@ SELECT
 
 FROM approvisionnement a
 
-INNER JOIN produit p
-    ON a.idProd = p.idprod
-
-INNER JOIN fournisseur f
-    ON a.idFourn = f.id
-
-INNER JOIN succursale s
-    ON a.idSuc = s.idsuc
-
-LEFT JOIN fixationprix fp
-    ON a.idAprov = fp.IdApprov
-
-ORDER BY a.idAprov DESC
+INNER JOIN produit p ON a.idProd = p.idprod
+INNER JOIN fournisseur f ON a.idFourn = f.id
+INNER JOIN succursale s ON a.idSuc = s.idsuc
+LEFT JOIN fixationprix fp ON a.idAprov = fp.IdApprov
 
 ";
 
-$stmt = $pdo->query($sql);
+if (!empty($search)) {
+    $sql .= " WHERE p.designP LIKE :search
+              OR f.nom LIKE :search
+              OR f.postnom LIKE :search ";
+}
+
+$sql .= " ORDER BY a.idAprov DESC
+          LIMIT :limit OFFSET :offset";
+
+$stmt = $pdo->prepare($sql);
+
+if (!empty($search)) {
+    $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
+}
+
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+
+$stmt->execute();
+
 $appros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
@@ -199,6 +234,23 @@ Suivant
 </div>
 
 <div class="table-responsive">
+
+
+	<form method="GET" class="mb-3">
+    <div class="input-group">
+        <input type="text" 
+               name="search" 
+               class="form-control"
+               placeholder="Rechercher un produit..."
+               value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
+
+        <div class="input-group-append">
+            <button class="btn btn-primary" type="submit">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+</form>
 
 <table class="table table-hover table-sm">
 

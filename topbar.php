@@ -96,8 +96,8 @@ $alertes = $stmtAlert->fetchAll();
                                     <?= ($countAlert > 9) ? '9+' : $countAlert ?>
                                 </span>
                             </a>
-                            <!-- Dropdown - Alerts -->
-                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
+            <!-- Dropdown - Alerts -->
+        <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
      aria-labelledby="alertsDropdown">
 
     <h6 class="dropdown-header">
@@ -121,7 +121,7 @@ $alertes = $stmtAlert->fetchAll();
                 }
             ?>
 
-            <a class="dropdown-item d-flex align-items-center" href="/gestion_quincaillerie/produits/index.php">
+            <a class="dropdown-item d-flex align-items-center" href="/gestion_quincaillerie/etat/index.php">
 
                 <div class="mr-3">
                     <div class="icon-circle <?= $bg ?>">

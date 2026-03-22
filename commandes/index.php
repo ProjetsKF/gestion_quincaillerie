@@ -78,7 +78,10 @@ $clt = $res->fetchAll();
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>BISIKOMASH - Clients</title>
+    <title>BISIKOMASH - Vente</title>
+
+     <link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+    <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
 
     <!-- Custom fonts for this template-->
 <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
@@ -134,11 +137,7 @@ $clt = $res->fetchAll();
                 Nos Clients
             </h6>
 
-            <button class="btn btn-primary btn-sm"
-                    data-toggle="modal"
-                    data-target="#clientModal">
-                <i class="fas fa-plus"></i> Nouveau Client
-            </button>
+            
         </div>
 
         <!-- Body -->

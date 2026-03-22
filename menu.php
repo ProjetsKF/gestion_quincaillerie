@@ -77,7 +77,7 @@
 
    
     <li class="nav-item">
-        <a class="nav-link" href="stock/etat_stock.php">
+        <a class="nav-link" href="/gestion_quincaillerie/etat/index.php">
             <i class="fas fa-warehouse"></i>
             <span>État du stock</span>
         </a>
@@ -95,17 +95,17 @@
 
     <div class="bg-white py-2 collapse-inner rounded">
 
-        <a class="collapse-item" href="rapports/ventes.php">
+        <a class="collapse-item" href="/gestion_quincaillerie/rapports/ventes.php">
             <i class="fas fa-chart-bar mr-2 text-primary"></i>
             Rapport ventes
         </a>
 
-        <a class="collapse-item" href="rapports/achats.php">
+        <a class="collapse-item" href="/gestion_quincaillerie/rapports/achats.php">
             <i class="fas fa-file-invoice mr-2 text-success"></i>
             Rapport achats
         </a>
 
-        <a class="collapse-item" href="rapports/benefices.php">
+        <a class="collapse-item" href="/gestion_quincaillerie/rapports/benefices.php">
             <i class="fas fa-coins mr-2 text-warning"></i>
             Rapport bénéfices
         </a>

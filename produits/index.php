@@ -3,6 +3,7 @@
 session_start();
 
 require_once '../bd/database.php';
+require_once '../auth_admin.php';
 
 /* ===============================
    PAGINATION PRODUITS

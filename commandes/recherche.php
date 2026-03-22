@@ -55,6 +55,9 @@ $prod = $req->fetchAll(PDO::FETCH_ASSOC);
 
     <title>BISIKOMASH - Produits</title>
 
+    <link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+    <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+
     <!-- Custom fonts for this template-->
 <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
     <link
