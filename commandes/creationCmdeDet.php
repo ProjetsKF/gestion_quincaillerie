@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $message = "Produit enregistré avec succès.";
         $message_type = 'success';
-        header('Location:../commandes/produits.php?idclt='.$_GET['idclt'].'&idcmd='.$_GET['idcmd'].'PrixT='.$som['PrixT']);
+        header('Location:../commandes/produits.php?idclt='.$_GET['idclt'].'&idcmd='.$_GET['idcmd'].'&PrixT='.$som['PrixT']);
         }
 
     } else {

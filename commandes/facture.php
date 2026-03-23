@@ -301,16 +301,16 @@ $(document).ready(function(){
             Retour
 
         </a>   
-
+        <?php foreach ($comEnt as $cmde) : ?>
          <a href="../paiements/facturePayee.php?clt=<?php echo $_GET['clt']; ?>
-    &PrixT=<?php echo $_GET['PrixT']; ?>&idCom=<?php echo $_GET['idCom']; ?>&unitMon=<?php echo $_GET['unitMon']; ?>"
+    &PrixT=<?php echo $cmde['SousTot']; ?>&idCom=<?php echo $_GET['idCom']; ?>&unitMon=<?php echo $cmde['unitMon']; ?>"
                 class="btn btn-primary ml-10"                
                 
                 >
             <i class="fa-solid fa-dollar-sign"></i>
             Payer
         </a>                  
-
+        <?php endforeach; ?>
         <button 
                 class="btn btn-success"
                 onclick="window.print()">
