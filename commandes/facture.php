@@ -302,13 +302,14 @@ $(document).ready(function(){
 
         </a>   
 
-         <a href="#" 
-                class="btn btn-primary ml-10"
+         <a href="../paiements/facturePayee.php?clt=<?php echo $_GET['clt']; ?>
+    &PrixT=<?php echo $_GET['PrixT']; ?>&idCom=<?php echo $_GET['idCom']; ?>&unitMon=<?php echo $_GET['unitMon']; ?>"
+                class="btn btn-primary ml-10"                
+                
                 >
             <i class="fa-solid fa-dollar-sign"></i>
             Payer
-
-        </a>                       
+        </a>                  
 
         <button 
                 class="btn btn-success"

@@ -1,97 +1,40 @@
 <?php
+
 session_start();
 require_once '../bd/database.php';
-
-if (!isset($_SESSION['idsuc'])) {
-    header("Location: ../index.php");
-    exit;
-}
-
-/* Sécurité : recruteur uniquement 
-if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
-    header('Location: ../login.php');
-    exit;
-}
-*/
-
-$message = '';
-$message_type = '';
-
-$sql = "SELECT DISTINCT *,SUM(PT)as PrixT from (SELECT c.idCom,c.datCom,cl.nom,cl.postnom,cl.prenom,cl.raisSoc,cl.tel,s.nomSuc,s.comm,p.designP,p.caractProduit,d.Qte,d.unitMes,f.pu,f.unitMon, f.pu*d.Qte as PT FROM Commande c INNER JOIN client cl on c.idClt=cl.idclt INNER JOIN succursale s ON c.idSuc=s.idsuc INNER JOIN detailscommande d ON c.idCom=d.idcom INNER JOIN produit p on d.idprod=p.idprod INNER JOIN approvisionnement a ON d.idApprov=a.idAprov INNER JOIN fixationprix f on a.idAprov=f.IdApprov)rqt WHERE idcom=:idcom GROUP BY idcom ";
-
-$somFact= $pdo->prepare($sql);
-$somFact->execute([
-    ':idcom'       =>$_GET['idcmd']
-]);
-
-$som = $somFact->fetchAll(PDO::FETCH_ASSOC);
-
-$sqlCom = "SELECT tot_Approv-tot_Com as Stock from (SELECT idprod,designP,caractProduit,seuil_min,CASE WHEN tot_Approv is null then 0 else tot_Approv end as tot_Approv, CASE WHEN tot_Com is null then 0 else tot_Com end as tot_Com from(SELECT produit.idprod,designP,caractProduit, sum(approvisionnement.Qte)as tot_Approv,sum(detailscommande.Qte)as tot_Com,seuil_min from approvisionnement LEFT JOIN produit ON approvisionnement.idProd= produit.idprod LEFT JOIN detailscommande on approvisionnement.idAprov= detailscommande.idApprov group by designP,caractProduit)rqt)rqt   
-    WHERE CONCAT(designP,' ',caractProduit)=:designP";
-
-$verQte= $pdo->prepare($sqlCom);
-$verQte->execute([
-    ':designP'       =>$_GET['prod']
-]);
-
-$ver = $verQte->fetchAll(PDO::FETCH_ASSOC);
-
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $Qte = trim($_POST['Qte']);
-    $unitMes = trim($_POST['unitMes']);
-    $idprod = $_GET['prod'];
-    $idApprov = $_GET['idApp'];
+    $mont = trim($_POST['montant']);
+    $motif = trim($_POST['motif']);
+    $idcom = trim($_POST['idcom']);
 
 
-    if ($Qte && $unitMes) {
-        if($ver<=$Qte){
-            $message = "Quantité supérieure.";
-            $message_type = 'error';
-        }
-        else{
-            $sql = "INSERT INTO detailscommande
-                (idcom, idprod,Qte,unitMes,idApprov)
+    if ($mont) {
+            $sql = "INSERT INTO Paiement
+                (montant,unitMon,motif,idcom)
                 VALUES
-                (:idCom,(SELECT idprod from Produit where CONCAT(designP,' ',caractProduit)=:idprod ),:Qte,:unitMes,:idApprov)";
+                (:montant,:unitMon,:Motif,:idcom)";
                 $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            ':idCom'        =>$_GET['idcmd'],
-            ':idprod'       => $_GET['prod'],
-            ':Qte'          => $Qte,
-            ':unitMes'      => $unitMes,
-            ':idApprov'      => $idApprov
+            ':montant'        =>$mont,
+            ':unitMon'       => $_GET['unitMon'],
+            ':Motif'          => $motif,
+            ':idcom'          => $idcom
         ]);
 
         $message = "Produit enregistré avec succès.";
         $message_type = 'success';
-        header('Location:../commandes/produits.php?idclt='.$_GET['idclt'].'&idcmd='.$_GET['idcmd'].'PrixT='.$som['PrixT']);
-        }
+        header('Location:../paiements/index.php?idclt='.$_GET['idclt'].'&idcmd='.$_GET['idcmd']);
 
     } else {
         $message = "Tous les champs sont obligatoires.";
-        $message_type = 'error';
-      
-    }    
+        $message_type = 'error';   
+    }      
 }
 
 
 
-/* ===============================
-   AFFICHAGE DES PRODUITS
-================================= */
-
-$sql = "SELECT * FROM produit LIMIT 5";
-
-$res = $pdo->prepare($sql);
-$res->execute();
-
-$prod = $res->fetchAll();
-
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -156,20 +99,7 @@ $prod = $res->fetchAll();
     <!-- Card principale -->
     <div class="card shadow mb-4">
 
-        <!-- Header -->
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">
-               Détails commande
-            </h6>
-
-<!-- Bouton Actualiser -->
-       
-            <button class="btn btn-primary btn-sm"
-                    data-toggle="modal"
-                    data-target="#produitModal">
-                <i class="fas fa-plus"></i> Nouveau Produit
-            </button>
-        </div>
+        
 
         <!-- Body -->
         <div class="card-body">
@@ -182,43 +112,29 @@ $prod = $res->fetchAll();
             <div class="table-responsive">
                 <form method="post">
                     <div class="form-group">
-                        <label>Quantité *</label>
-                        <input type="text" class="form-control" name="Qte" 
-                               placeholder="Ex: 10 kg, 10 Bidons, 10 pièces, 10 cartons, etc">
+                        <label>Commande *</label>
+                        <input type="text" class="form-control" name="idcom" 
+                               value="<?= $_GET['idCom'] ?>">
                     </div>
 
                      <div class="form-group">
 
-                    <label>Unité de mesure *</label>
-
-                    <input type="text"
-                           class="form-control"
-                           name="unitMes"
-                           value="<?= isset($_GET['unitMes']) ? htmlspecialchars($_GET['unitMes']) : '' ?>"
-                           placeholder="Ex: Kg, pièces, carton, bidons, etc."
-                           readonly>
+                    <label>Motif *</label>
+                    <select name="motif" class="form-control">
+                        <option>Apurement</option>
+                        <option>Paiement partiel</option>
+                    </select>
                 </div>
 
                      <div class="form-group">
-                        <label>Produit *</label>
-                        <input type="text" name="idpro"  class="form-control" id="targetInput" value="<?= $_GET['prod'] ?>" 
-                               placeholder="Ex: Clou 3 pouces" readonly="true" >
-                               <script>
-                                    $(document).ready(function(){
-                                        $('#produitModal').on('show.bs.modal', function(event){
-                                            var button=$(event.relatedTarget);
-                                            var recId=button.data('id');
-                                            var modal=$(this).prop('id');
-                                            modal.find('#targetInput').val(recId);  
-                                    });
-                                 });
-                                   
-                               </script>
+                        <label>Montant *</label>
+                        <input type="text" name="montant"  class="form-control" id="targetInput" value="<?= $_GET['PrixT'] ?>" 
+                                readonly="true" >                               
                     </div>
 
                      <div class="form-group">
                         <label>Client *</label>
-                        <input type="text" name="idclt" value="<?= $_GET['idclt'] ?>" class="form-control" readonly="true"
+                        <input type="text" name="idclt" value="<?= $_GET['clt'] ?>" class="form-control" readonly="true"
                                placeholder="Ex: BISIKOMASH SARL">
                     </div>
 

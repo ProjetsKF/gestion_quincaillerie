@@ -303,12 +303,13 @@ $(document).ready(function(){
 
         </a>   
 
-         <a href="#" 
-                class="btn btn-primary ml-10"
+         <a href="../paiements/facturePayee.php?clt=<?php echo $_GET['clt']; ?>
+    &PrixT=<?php echo $_GET['PrixT']; ?>&idCom=<?php echo $_GET['idCom']; ?>&unitMon=<?php echo $_GET['unitMon']; ?>"
+                class="btn btn-primary ml-10"                
+                
                 >
             <i class="fa-solid fa-dollar-sign"></i>
             Payer
-
         </a>                       
 
         <button 
@@ -507,6 +508,72 @@ $(document).ready(function(){
             </div>
 
             <div class="modal-body">
+
+
+
+<!-- Modal effectuer le paiement -->
+<div class="modal fade" id="paiementModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg rounded">
+
+            <div class="modal-header border-0">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-industry text-primary"></i>
+                    Nouveau paiement
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <form method="POST" action="create.php"> 
+
+                <div class="modal-body">
+
+                    <div class="form-group">
+                        <label>Nom *</label>
+                        <input type="text" name="nom" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Postnom</label>
+                        <input type="text" name="postnom" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Prénom</label>
+                        <input type="text" name="pren" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Dénomination Sociale</label>
+                        <input type="text" name="denomSoc" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Téléphone</label>
+                        <input type="text" name="tel" class="form-control" required>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0">
+
+                    <button type="submit" name="btnFournisseur" class="btn btn-success">
+                        <i class="fas fa-save"></i> Ajouter
+                    </button>
+
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        Annuler
+                    </button>
+
+                </div>
+
+            </form> 
+
+        </div>
+    </div>
+</div>
 
 <style>
 

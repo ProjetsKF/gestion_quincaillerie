@@ -63,43 +63,22 @@ $totalPages = ceil($totalRecords / $limit);
    RECUPERATION DES COMMANDES
 ================================= */
 
-$sql = "
-    SELECT
-        c.idCom,
-        c.datCom,
-
-        cl.nom,
-        cl.postnom,
-        cl.prenom,
-        cl.raisSoc,
-        cl.tel,
-
-        s.nomSuc,
-        s.Comm
-
-    FROM commande c
-
-    LEFT JOIN client cl
-        ON c.idClt = cl.idclt
-
-    LEFT JOIN succursale s
-        ON c.idSuc = s.idsuc
-";
+$sql = "SELECT DISTINCT *,SUM(PT)as PrixT from (SELECT c.idCom,c.datCom,cl.nom,cl.postnom,cl.prenom,cl.raisSoc,cl.tel,s.nomSuc,s.comm,p.designP,p.caractProduit,d.Qte,d.unitMes,f.pu,f.unitMon, f.pu*d.Qte as PT FROM Commande c INNER JOIN client cl on c.idClt=cl.idclt INNER JOIN succursale s ON c.idSuc=s.idsuc INNER JOIN detailscommande d ON c.idCom=d.idcom INNER JOIN produit p on d.idprod=p.idprod INNER JOIN approvisionnement a ON d.idApprov=a.idAprov INNER JOIN fixationprix f on a.idAprov=f.IdApprov)rqt GROUP BY idcom ";
 
 if (!empty($search)) {
 
     $sql .= "
-        WHERE cl.nom LIKE :search
-        OR cl.postnom LIKE :search
-        OR cl.prenom LIKE :search
-        OR cl.raisSoc LIKE :search
-        OR cl.tel LIKE :search
-        OR c.datCom LIKE :search
+        WHERE nom LIKE :search
+        OR postnom LIKE :search
+        OR prenom LIKE :search
+        OR raisSoc LIKE :search
+        OR tel LIKE :search
+        OR datCom LIKE :search
     ";
 }
 
 $sql .= "
-    ORDER BY c.idCom DESC
+    ORDER BY idCom DESC
     LIMIT :start, :limit
 ";
 
@@ -347,7 +326,7 @@ if (window.location.search.includes("deleted")) {
         <?php echo $row['nomSuc']; ?>
     </td>
 
-    <td><?php echo $row['Comm']; ?></td>
+    <td><?php echo $row['comm']; ?></td>
 
     <td>
 
@@ -356,7 +335,9 @@ if (window.location.search.includes("deleted")) {
     <a href="facture.php?clt=<?php echo $row['nom'].' '.$row['postnom'].' '.$row['prenom']; ?>
     &dat=<?php echo $row['datCom']; ?>
     &tel=<?php echo $row['tel']; ?>
-    &idCom=<?php echo $row['idCom']; ?>"
+    &idCom=<?php echo $row['idCom']; ?>
+    &PrixT=<?php echo $row['PrixT']; ?>
+    &unitMon=<?php echo $row['unitMon']; ?>"
 
     class="btn btn-primary btn-sm">
 
