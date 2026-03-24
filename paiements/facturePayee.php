@@ -2,6 +2,9 @@
 
 session_start();
 require_once '../bd/database.php';
+
+$msg = '';
+$message_type = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $mont = trim($_POST['montant']);
@@ -10,6 +13,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     if ($mont) {
+        $checkPaie = "SELECT * FROM paiement WHERE motif='Apurement' AND idcom=:idcom ";
+        $checkStmt = $pdo->prepare($checkPaie);
+        $checkStmt->execute([
+            ':idcom' => $idcom
+        ]);
+
+        if ($checkStmt->fetch()) {
+
+            $msg = "Cette commande a deja été payée en totalité.";
+            $message_type = 'Erreur';
+
+        } 
+        elseif ($mont>$_GET['PrixT']) {
+            $msg = "Le montant saisi est supérieur au montant dû.";
+            $message_type = 'Erreur';
+        }
+        else{
             $sql = "INSERT INTO Paiement
                 (montant,unitMon,motif,idcom)
                 VALUES
@@ -22,12 +42,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':idcom'          => $idcom
         ]);
 
-        $message = "Produit enregistré avec succès.";
+        $msg = "facture payée avec succès.";
         $message_type = 'success';
         header('Location:../paiements/index.php?idclt='.$_GET['idclt'].'&idcmd='.$_GET['idcmd']);
 
-    } else {
-        $message = "Tous les champs sont obligatoires.";
+        }
+    }
+    else {
+        $msg = "Tous les champs sont obligatoires.";
         $message_type = 'error';   
     }      
 }
@@ -111,6 +133,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Tableau -->
             <div class="table-responsive">
                 <form method="post">
+                    <?php if (!empty($msg)) : ?>
+                                    <div class="card-panel 
+                                        <?= $message_type === 'error' ? 'red lighten-4' : 'green lighten-4' ?>">
+                                        
+                                        <span class="
+                                            <?= $message_type === 'error' 
+                                                ? 'red-text text-darken-4' 
+                                                : 'green-text text-darken-4' ?>">
+                                            
+                                            <i class="material-icons left">
+                                                <?= $message_type === 'error' ? 'error' : 'check_circle' ?>
+                                            </i>
+                                            <?= htmlspecialchars($msg) ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
                     <div class="form-group">
                         <label>Commande *</label>
                         <input type="text" class="form-control" name="idcom" 

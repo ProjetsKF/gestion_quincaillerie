@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role_id'] != 2) {
     exit;
 }
 */
-
+$msg = '';
 $message = '';
 $message_type = '';
 
@@ -26,8 +26,7 @@ $somFact->execute([
 
 $som = $somFact->fetchAll(PDO::FETCH_ASSOC);
 
-$sqlCom = "SELECT tot_Approv-tot_Com as Stock from (SELECT idprod,designP,caractProduit,seuil_min,CASE WHEN tot_Approv is null then 0 else tot_Approv end as tot_Approv, CASE WHEN tot_Com is null then 0 else tot_Com end as tot_Com from(SELECT produit.idprod,designP,caractProduit, sum(approvisionnement.Qte)as tot_Approv,sum(detailscommande.Qte)as tot_Com,seuil_min from approvisionnement LEFT JOIN produit ON approvisionnement.idProd= produit.idprod LEFT JOIN detailscommande on approvisionnement.idAprov= detailscommande.idApprov group by designP,caractProduit)rqt)rqt   
-    WHERE CONCAT(designP,' ',caractProduit)=:designP";
+$sqlCom = "SELECT designP,caractProduit,seuil_min,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as Stock FROM produit p LEFT JOIN (SELECT idprod,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod)a On p.idprod=a.idProd LEFT join (SELECT idprod,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod)c ON p.idprod=c.idprod where CONCAT(designP,' ',caractProduit)=:designP";
 
 $verQte= $pdo->prepare($sqlCom);
 $verQte->execute([
@@ -46,10 +45,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     if ($Qte && $unitMes) {
-        if($ver<=$Qte){
-            $message = "Quantité supérieure.";
-            $message_type = 'error';
-        }
+        $checkStock = "SELECT designP,caractProduit,seuil_min,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as Stock FROM produit p LEFT JOIN (SELECT idprod,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod)a On p.idprod=a.idProd LEFT join (SELECT idprod,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod)c ON p.idprod=c.idprod where CONCAT(designP,' ',caractProduit)=:designP  AND COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0)<$Qte";
+        $checkStmt = $pdo->prepare($checkStock);
+        $checkStmt->execute([
+            ':designP' => $_GET['prod']
+        ]);
+
+        if ($checkStmt->fetch()) {
+
+            $msg = "La quantité commandée est supérieure au stock de ce produit.";
+            $message_type = 'Erreur';
+
+        } 
         else{
             $sql = "INSERT INTO detailscommande
                 (idcom, idprod,Qte,unitMes,idApprov)
@@ -181,6 +188,30 @@ $prod = $res->fetchAll();
             <!-- Tableau -->
             <div class="table-responsive">
                 <form method="post">
+                    <?php if (!empty($msg)) : ?>
+                                    <div class="card-panel 
+                                        <?= $message_type === 'error' ? 'red lighten-4' : 'green lighten-4' ?>">
+                                        
+                                        <span class="
+                                            <?= $message_type === 'error' 
+                                                ? 'red-text text-darken-4' 
+                                                : 'green-text text-darken-4' ?>">
+                                            
+                                            <i class="material-icons left">
+                                                <?= $message_type === 'error' ? 'error' : 'check_circle' ?>
+                                            </i>
+                                            <?= htmlspecialchars($msg) ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+                    <div class="form-group">
+                        <?php foreach ($ver as $sto) : ?>
+                        <label>Stock disponible *</label>
+                        <input type="text"  class="form-control" name="Qte" 
+                               value="<?php echo $sto['Stock']; ?>" readonly="true" bg-success text-red>
+                               <?php endforeach; ?>
+                    </div>
+
                     <div class="form-group">
                         <label>Quantité *</label>
                         <input type="text" class="form-control" name="Qte" 
