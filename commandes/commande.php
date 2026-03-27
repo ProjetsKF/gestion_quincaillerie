@@ -133,11 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- Bouton Actualiser -->
        
-            <button class="btn btn-primary btn-sm"
-                    data-toggle="modal"
-                    data-target="#produitModal">
-                <i class="fas fa-plus"></i> Nouvelle commande
-            </button>
+           
         </div>
 
         <!-- Body -->

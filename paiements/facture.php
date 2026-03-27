@@ -3,6 +3,7 @@
 session_start();
 require_once '../bd/database.php';
 
+// Charger toutes les commandes (même si ici tu ne l'utilises pas)
 $sql = "
         SELECT 
             c.idCom,
@@ -41,32 +42,88 @@ $sql = "
 
 $stmt = $pdo->query($sql);
 
-$sqlfact="SELECT commande.idCom,datCom,nom,postnom,prenom,raisSoc,tel,nomSuc,comm,designP,caractProduit,detailscommande.Qte,detailscommande.unitMes,fixationprix.pu,fixationprix.unitMon, fixationprix.pu*detailscommande.Qte as PT FROM Commande INNER JOIN client on commande.idClt=client.idclt INNER JOIN succursale ON commande.idSuc=succursale.idsuc INNER JOIN detailscommande ON commande.idCom=detailscommande.idcom INNER JOIN produit on detailscommande.idprod=produit.idprod INNER JOIN approvisionnement ON detailscommande.idApprov=approvisionnement.idAprov INNER JOIN fixationprix on approvisionnement.idAprov=fixationprix.IdApprov WHERE commande.idCom=:idco";
 
-$sqlfactEnt="SELECT *,SUM(PT) as SousTot FROM (SELECT commande.idCom,datCom,nom,postnom,prenom,raisSoc,tel,nomSuc,comm,designP,caractProduit,detailscommande.Qte,detailscommande.unitMes, fixationprix.pu,fixationprix.unitMon, fixationprix.pu*detailscommande.Qte as PT,CONCAT('FAC',' ',YEAR(datCom),' ',commande.idCom) as NumFact FROM Commande INNER JOIN client on commande.idClt=client.idclt INNER JOIN succursale ON commande.idSuc=succursale.idsuc INNER JOIN detailscommande ON commande.idCom=detailscommande.idcom INNER JOIN produit on detailscommande.idprod=produit.idprod INNER JOIN approvisionnement ON detailscommande.idApprov=approvisionnement.idAprov INNER JOIN fixationprix on approvisionnement.idAprov=fixationprix.IdApprov WHERE commande.idCom=:idco )rqt";
+/* ============================================================
+   ✅  REQUÊTE DES LIGNES DE LA FACTURE
+   ============================================================ */
+$sqlfact = "
+SELECT commande.idCom, datCom, nom, postnom, prenom, raisSoc, tel, nomSuc, comm,
+designP, caractProduit, detailscommande.Qte, detailscommande.unitMes,
+fixationprix.pu, fixationprix.unitMon,
+fixationprix.pu * detailscommande.Qte AS PT
+FROM Commande
+INNER JOIN client ON commande.idClt = client.idclt
+INNER JOIN succursale ON commande.idSuc = succursale.idsuc
+INNER JOIN detailscommande ON commande.idCom = detailscommande.idcom
+INNER JOIN produit ON detailscommande.idprod = produit.idprod
+INNER JOIN approvisionnement ON detailscommande.idApprov = approvisionnement.idAprov
+INNER JOIN fixationprix ON approvisionnement.idAprov = fixationprix.IdApprov
+WHERE commande.idCom = :idco
+";
 
-$res= $pdo->prepare($sqlfact);
-$resEnt= $pdo->prepare($sqlfactEnt);
+
+/* ============================================================
+   ✅  REQUÊTE POUR LES TOTALS
+   ============================================================ */
+$sqlfactEnt = "
+SELECT *, SUM(PT) AS SousTot FROM (
+    SELECT commande.idCom, datCom, nom, postnom, prenom, raisSoc, tel, nomSuc, comm,
+    designP, caractProduit, detailscommande.Qte, detailscommande.unitMes,
+    fixationprix.pu, fixationprix.unitMon,
+    fixationprix.pu * detailscommande.Qte AS PT,
+    CONCAT('FAC', ' ', YEAR(datCom), ' ', commande.idCom) AS NumFact
+    FROM Commande
+    INNER JOIN client ON commande.idClt = client.idclt
+    INNER JOIN succursale ON commande.idSuc = succursale.idsuc
+    INNER JOIN detailscommande ON commande.idCom = detailscommande.idcom
+    INNER JOIN produit ON detailscommande.idprod = produit.idprod
+    INNER JOIN approvisionnement ON detailscommande.idApprov = approvisionnement.idAprov
+    INNER JOIN fixationprix ON approvisionnement.idAprov = fixationprix.IdApprov
+    WHERE commande.idCom = :idco
+) rqt
+";
+
+
+/* ============================================================
+   ✅  EXÉCUTION DES REQUÊTES
+   ============================================================ */
+$res = $pdo->prepare($sqlfact);
+$resEnt = $pdo->prepare($sqlfactEnt);
+
 $res->execute([
-    ':idco' =>$_GET['idCom']
+    ':idco' => $_GET['idCom']
 ]);
 
 $resEnt->execute([
-    ':idco' =>$_GET['idCom']
+    ':idco' => $_GET['idCom']
 ]);
 
-$com = $res->fetchAll();
-$comEnt = $resEnt->fetchAll();
+$com = $res->fetchAll();      // toutes les lignes de la facture
+$comEnt = $resEnt->fetchAll(); // total + infos facture
 
-$co = $res->fetch();
-$compteur=0;
+// ✅ prendre la première ligne pour les infos client/date
+$co = count($com) > 0 ? $com[0] : null;
 
-$no=$co['nom'];
-$idco=$co['idCom'];
+$compteur = 0;
+
+$no   = isset($co['nom']) ? $co['nom'] : '';
+$idco = isset($co['idCom']) ? $co['idCom'] : '';
 
 
+
+/* ============================================================
+   ✅  VÉRIFICATION DU PAIEMENT (ruban rouge / vert)
+   ============================================================ */
+$sqlPay = "SELECT COUNT(*) AS total FROM paiement WHERE idCom = :idCom";
+$resPay = $pdo->prepare($sqlPay);
+$resPay->execute([":idCom" => $_GET['idCom']]);
+$dataPay = $resPay->fetch();
+
+// ✅ Si au moins un paiement existe → payé
+$estPaye = ($dataPay["total"] > 0);
 
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -79,6 +136,9 @@ $idco=$co['idCom'];
     <meta name="author" content="">
 
     <title>BISIKOMASH - Facturation</title>
+
+     <link rel="shortcut icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
+    <link rel="icon" href="/gestion_quincaillerie/img/icone.ico" type="image/x-icon">
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -183,8 +243,17 @@ $(document).ready(function(){
 }
 
 .title{
-    font-size:40px;
-    font-weight:bold;
+    
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 40px;
+    font-weight: bold;
+    color: #ffffff;
+    letter-spacing: 2px;
+    z-index: 1;
+
 }
 
 .info-section{
@@ -289,6 +358,40 @@ $(document).ready(function(){
 
 }
 
+.header {
+    position: relative;
+    overflow: hidden; /* IMPORTANT pour couper proprement le ruban */
+
+}
+
+.ribbon {
+    position: absolute;
+    top: 18px;
+    right: -42px;
+    width: 160px;
+    text-align: center;
+
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 1px;
+
+    padding: 8px 0;
+    transform: rotate(45deg);
+
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* Ruban vert */
+.ribbon-paid {
+    background-color: #158a16;
+}
+
+/* Ruban rouge */
+.ribbon-unpaid {
+    background-color: #c0392b;
+}
+
 </style>
 
 <!-- zone imprimable -->
@@ -341,6 +444,13 @@ $(document).ready(function(){
             <div class="title">
                 FACTURE
             </div>
+
+            <?php if ($estPaye): ?>
+                <div class="ribbon ribbon-paid">PAYÉ</div>
+            <?php else: ?>
+                <div class="ribbon ribbon-unpaid">NON PAYÉ</div>
+            <?php endif; ?>
+
 
         </div>
 

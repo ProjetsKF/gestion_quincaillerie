@@ -1,9 +1,99 @@
 <?php
+
 session_start();
+require_once 'bd/database.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
+}
+
+// ✅ ventes journalières
+$qJour = $pdo->query("
+    SELECT COALESCE(SUM(fixationprix.pu * detailscommande.Qte), 0) AS total
+    FROM commande
+    INNER JOIN detailscommande
+        ON commande.idCom = detailscommande.idcom
+    INNER JOIN approvisionnement
+        ON detailscommande.idApprov = approvisionnement.idAprov
+    INNER JOIN fixationprix
+        ON approvisionnement.idAprov = fixationprix.IdApprov
+    WHERE DATE(commande.datCom) = CURDATE()
+")->fetch();
+
+$ventesJour = $qJour['total'];
+
+// ✅ ventes mensuelles
+$qMois = $pdo->query("
+    SELECT COALESCE(SUM(fixationprix.pu * detailscommande.Qte), 0) AS total
+    FROM commande
+    INNER JOIN detailscommande ON commande.idCom = detailscommande.idcom
+    INNER JOIN approvisionnement ON detailscommande.idApprov = approvisionnement.idAprov
+    INNER JOIN fixationprix ON approvisionnement.idAprov = fixationprix.IdApprov
+    WHERE MONTH(commande.datCom) = MONTH(CURDATE())
+      AND YEAR(commande.datCom) = YEAR(CURDATE())
+")->fetch();
+$ventesMois = $qMois['total'];
+
+// ✅ nombre de commandes mensuelles
+$qCmd = $pdo->query("
+    SELECT COUNT(*) AS total
+    FROM commande
+    WHERE MONTH(datCom) = MONTH(CURDATE())
+      AND YEAR(datCom) = YEAR(CURDATE())
+")->fetch();
+$nbCommandes = $qCmd['total'];
+
+// ✅ nombre de succursales
+$qSuc = $pdo->query("SELECT COUNT(*) AS total FROM succursale")->fetch();
+$nbSuccursales = $qSuc['total'];
+
+
+// Ventes par mois (année en cours)
+$sqlVentesMois = "
+    SELECT 
+        MONTH(c.datCom) AS mois,
+        COALESCE(SUM(fp.pu * dc.Qte), 0) AS total
+    FROM commande c
+    INNER JOIN detailscommande dc ON c.idCom = dc.idcom
+    INNER JOIN approvisionnement a ON dc.idApprov = a.idAprov
+    INNER JOIN fixationprix fp ON a.idAprov = fp.IdApprov
+    WHERE YEAR(c.datCom) = YEAR(CURDATE())
+    GROUP BY MONTH(c.datCom)
+    ORDER BY mois
+";
+$resVentes = $pdo->query($sqlVentesMois)->fetchAll(PDO::FETCH_ASSOC);
+
+$labelsMois = [];
+$dataVentes = [];
+
+$moisNoms = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"];
+
+foreach ($resVentes as $row) {
+    $labelsMois[] = $moisNoms[$row['mois'] - 1];
+    $dataVentes[] = $row['total'];
+}
+
+
+$sqlSucc = "
+    SELECT 
+        s.nomSuc,
+        COALESCE(SUM(fp.pu * dc.Qte), 0) AS total
+    FROM succursale s
+    INNER JOIN commande c ON s.idsuc = c.idSuc
+    INNER JOIN detailscommande dc ON c.idCom = dc.idcom
+    INNER JOIN approvisionnement a ON dc.idApprov = a.idAprov
+    INNER JOIN fixationprix fp ON a.idAprov = fp.IdApprov
+    GROUP BY s.nomSuc
+";
+$resSucc = $pdo->query($sqlSucc)->fetchAll(PDO::FETCH_ASSOC);
+
+$labelsSucc = [];
+$dataSucc = [];
+
+foreach ($resSucc as $row) {
+    $labelsSucc[] = $row['nomSuc'];
+    $dataSucc[]   = $row['total'];
 }
 
 
@@ -80,7 +170,9 @@ if (!isset($_SESSION['user_id'])) {
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                                Ventes journalières</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$40,000</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        <?= number_format($ventesJour, 0, ',', ' ') ?> CDF
+                                        </div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="fas fa-calendar fa-2x text-gray-300"></i>
@@ -98,7 +190,11 @@ if (!isset($_SESSION['user_id'])) {
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                                 Ventes mensuelles</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$215,000</div>
+
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?= number_format($ventesMois, 0, ',', ' ') ?> CDF
+                                        </div>
+
                                         </div>
                                         <div class="col-auto">
                                             <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
@@ -108,52 +204,74 @@ if (!isset($_SESSION['user_id'])) {
                             </div>
                         </div>
 
-                        <!-- Earnings (Monthly) Card Example -->
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-info shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Nombre des commandes mensuelles
-                                            </div>
-                                            <div class="row no-gutters align-items-center">
-                                                <div class="col-auto">
-                                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">50%</div>
-                                                </div>
-                                                <div class="col">
-                                                    <div class="progress progress-sm mr-2">
-                                                        <div class="progress-bar bg-info" role="progressbar"
-                                                            style="width: 50%" aria-valuenow="50" aria-valuemin="0"
-                                                            aria-valuemax="100"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                       <!-- Nombre des commandes mensuelles -->
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
 
-                        <!-- Pending Requests Card Example -->
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-warning shadow h-100 py-2">
-                                <div class="card-body">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        Nombre des commandes mensuelles
+                                    </div>
+
                                     <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                                Nombre de succursales</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">5</div>
-                                        </div>
+                                        <!-- Valeur -->
                                         <div class="col-auto">
-                                            <i class="fas fa-comments fa-2x text-gray-300"></i>
+                                            <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">
+                                                <?= $nbCommandes ?>
+                                            </div>
+                                        </div>
+
+                                        <!-- Barre de progression -->
+                                        <div class="col">
+                                            <div class="progress progress-sm mr-2">
+                                                <div class="progress-bar bg-info"
+                                                     role="progressbar"
+                                                     style="width: <?= min($nbCommandes, 100) ?>%"
+                                                     aria-valuenow="<?= $nbCommandes ?>"
+                                                     aria-valuemin="0"
+                                                     aria-valuemax="100">
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Icône -->
+                                <div class="col-auto">
+                                    <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                                </div>
+
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                       <!-- Nombre de succursales -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card border-left-warning shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                            Nombre de succursales
+                                        </div>
+
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                            <?= $nbSuccursales ?>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-auto">
+                                        <i class="fas fa-building fa-2x text-gray-300"></i>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     </div>
 
                     <!-- Content Row -->
@@ -218,17 +336,7 @@ if (!isset($_SESSION['user_id'])) {
                                     <div class="chart-pie pt-4 pb-2">
                                         <canvas id="myPieChart"></canvas>
                                     </div>
-                                    <div class="mt-4 text-center small">
-                                        <span class="mr-2">
-                                            <i class="fas fa-circle text-primary"></i> Direct
-                                        </span>
-                                        <span class="mr-2">
-                                            <i class="fas fa-circle text-success"></i> Social
-                                        </span>
-                                        <span class="mr-2">
-                                            <i class="fas fa-circle text-info"></i> Referral
-                                        </span>
-                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -297,9 +405,70 @@ if (!isset($_SESSION['user_id'])) {
     <!-- Page level plugins -->
     <script src="vendor/chart.js/Chart.min.js"></script>
 
-    <!-- Page level custom scripts -->
+    <!-- Page level custom scripts 
     <script src="js/demo/chart-area-demo.js"></script>
-    <script src="js/demo/chart-pie-demo.js"></script>
+    <script src="js/demo/chart-pie-demo.js"></script>-->
+
+    <script>
+const areaCtx = document.getElementById("myAreaChart").getContext("2d");
+
+new Chart(areaCtx, {
+    type: "line",
+    data: {
+        labels: <?= json_encode($labelsMois) ?>,
+        datasets: [{
+            label: "Ventes mensuelles",
+            data: <?= json_encode($dataVentes) ?>,
+            borderColor: "#4e73df",
+            backgroundColor: "rgba(78, 115, 223, 0.1)",
+            tension: 0.3,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+
+
+<script>
+const pieCtx = document.getElementById("myPieChart").getContext("2d");
+
+new Chart(pieCtx, {
+    type: "doughnut",
+    data: {
+        labels: <?= json_encode($labelsSucc) ?>,
+        datasets: [{
+            data: <?= json_encode($dataSucc) ?>,
+            backgroundColor: [
+                "#4e73df",
+                "#1cc88a",
+                "#36b9cc",
+                "#f6c23e",
+                "#e74a3b"
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: "bottom"
+            }
+        }
+    }
+});
+</script>
+``
 
 </body>
 

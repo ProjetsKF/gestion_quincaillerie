@@ -171,11 +171,6 @@ $prod = $res->fetchAll();
 
 <!-- Bouton Actualiser -->
        
-            <button class="btn btn-primary btn-sm"
-                    data-toggle="modal"
-                    data-target="#produitModal">
-                <i class="fas fa-plus"></i> Nouveau Produit
-            </button>
         </div>
 
         <!-- Body -->

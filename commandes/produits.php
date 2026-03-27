@@ -138,12 +138,7 @@ $prod = $res->fetchAll();
                 <i class="fa-duotone fa-thin fa-folder-closed"></i> Fin commande
             </a>
 
-       
-            <button class="btn btn-primary btn-sm"
-                    data-toggle="modal"
-                    data-target="#produitModal">
-                <i class="fas fa-plus"></i> Nouveau Produit
-            </button>
+ 
         </div>
 
         <!-- Body -->
