@@ -14,7 +14,6 @@ $limit = 10;
 
 /* Page actuelle */
 $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
-
 if ($page < 1) {
     $page = 1;
 }
@@ -23,7 +22,7 @@ if ($page < 1) {
 $offset = ($page - 1) * $limit;
 
 /* ===============================
-   TOTAL PRODUITS (SANS GROUP BY)
+   TOTAL PRODUITS
 ================================= */
 $countQuery = $pdo->query("SELECT COUNT(*) FROM produit");
 $totalProducts = $countQuery->fetchColumn();
@@ -32,27 +31,55 @@ $totalProducts = $countQuery->fetchColumn();
 $totalPages = ceil($totalProducts / $limit);
 
 /* ===============================
-   REQUÊTE PRODUITS + STOCK
+   REQUÊTE PRODUITS (INFOS DE BASE)
 ================================= */
+$sql = "
+    SELECT 
+        p.idprod,
+        p.designP,
+        p.caractProduit,
+        p.seuil_min,
+        COALESCE(SUM(a.Qte), 0) AS total_appro
+    FROM produit p
+    LEFT JOIN approvisionnement a ON p.idprod = a.idprod
+    GROUP BY p.idprod
+    ORDER BY p.idprod DESC
+    LIMIT :limit OFFSET :offset
+";
 
-$sql = "SELECT 
-            p.idprod,
-            p.designP,
-            p.caractProduit,
-            p.seuil_min,
-            COALESCE(SUM(a.Qte), 0) AS total_appro
-        FROM produit p
-        LEFT JOIN approvisionnement a ON p.idprod = a.idProd
-        GROUP BY p.idprod
-        ORDER BY p.idprod DESC
-        LIMIT :limit OFFSET :offset";
+/* ===============================
+   ✅ REQUÊTE PRODUITS + STOCK (CORRIGÉE)
+   ⚠️ idprod AJOUTÉ OBLIGATOIREMENT
+================================= */
+$sqlCom = "
+    SELECT 
+        p.idprod,                          -- ✅ OBLIGATOIRE
+        p.designP,
+        p.caractProduit,
+        p.seuil_min,
+        COALESCE(a.totEntree, 0) - COALESCE(c.totSortie, 0) AS Stock
+    FROM produit p
 
-$sqlCom = "SELECT designP,caractProduit,seuil_min,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as Stock FROM produit p LEFT JOIN (SELECT idprod,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod)a On p.idprod=a.idProd LEFT join (SELECT idprod,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod)c ON p.idprod=c.idprod  
-    LIMIT :limit OFFSET :offset";
+    LEFT JOIN (
+        SELECT idprod, SUM(Qte) AS totEntree
+        FROM approvisionnement
+        GROUP BY idprod
+    ) a ON p.idprod = a.idprod
 
+    LEFT JOIN (
+        SELECT idprod, SUM(Qte) AS totSortie
+        FROM detailscommande
+        GROUP BY idprod
+    ) c ON p.idprod = c.idprod
+
+    ORDER BY p.idprod DESC
+    LIMIT :limit OFFSET :offset
+";
+
+/* ===============================
+   EXÉCUTION DES REQUÊTES
+================================= */
 $res = $pdo->prepare($sql);
-$compteur=0;
-
 $resCom = $pdo->prepare($sqlCom);
 
 $res->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -64,10 +91,15 @@ $resCom->bindValue(':offset', $offset, PDO::PARAM_INT);
 $res->execute();
 $resCom->execute();
 
-$prod = $res->fetchAll();
-$prodCom = $resCom->fetchAll();
+/* Résultats */
+$prod     = $res->fetchAll(PDO::FETCH_ASSOC);
+$prodCom  = $resCom->fetchAll(PDO::FETCH_ASSOC);
+
+$compteur = 0;
 
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -280,7 +312,7 @@ $prodCom = $resCom->fetchAll();
 
                   <tbody>
 
-<?php foreach ($prodCom as $pr) : $compteur++;
+<?php $compteur = 0; foreach ($prodCom as $pr) : $compteur++;
     $stock = $pr['Stock'];
     $seuil = $pr['seuil_min'];
 
@@ -460,21 +492,7 @@ Suivant
             </div>
 
             <div class="modal-body">
-                <?php if (!empty($message)) : ?>
-                    <div class="card-panel
-                        <?= $message_type === 'error' ? 'red lighten-4' : 'green lighten-4' ?>">
-                        <span class="
-                            <?= $message_type === 'error'
-                                ? 'red-text text-darken-4'
-                                : 'green-text text-darken-4' ?>">
-                            <i class="material-icons left">
-                                <?= $message_type === 'error' ? 'error' : 'check_circle' ?>
-                            </i>
-                            <?= htmlspecialchars($message) ?>
-                        </span>
-                    </div>
-                <?php endif; ?>
-
+               
                 <!-- FORMULAIRE CORRECT -->
                 <form method="post" action="create.php">
 

@@ -1,59 +1,83 @@
 <?php
-
 session_start();
 require_once 'bd/database.php';
 
+/* ===============================
+   SÉCURITÉ : UTILISATEUR CONNECTÉ
+================================= */
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
 
-// ✅ ventes journalières
-$qJour = $pdo->query("
-    SELECT COALESCE(SUM(fixationprix.pu * detailscommande.Qte), 0) AS total
-    FROM commande
-    INNER JOIN detailscommande
-        ON commande.idCom = detailscommande.idcom
-    INNER JOIN approvisionnement
-        ON detailscommande.idApprov = approvisionnement.idAprov
-    INNER JOIN fixationprix
-        ON approvisionnement.idAprov = fixationprix.IdApprov
-    WHERE DATE(commande.datCom) = CURDATE()
-")->fetch();
-
-$ventesJour = $qJour['total'];
-
-// ✅ ventes mensuelles
-$qMois = $pdo->query("
-    SELECT COALESCE(SUM(fixationprix.pu * detailscommande.Qte), 0) AS total
-    FROM commande
-    INNER JOIN detailscommande ON commande.idCom = detailscommande.idcom
-    INNER JOIN approvisionnement ON detailscommande.idApprov = approvisionnement.idAprov
-    INNER JOIN fixationprix ON approvisionnement.idAprov = fixationprix.IdApprov
-    WHERE MONTH(commande.datCom) = MONTH(CURDATE())
-      AND YEAR(commande.datCom) = YEAR(CURDATE())
-")->fetch();
-$ventesMois = $qMois['total'];
-
-// ✅ nombre de commandes mensuelles
-$qCmd = $pdo->query("
+/* ===============================
+   NOMBRE DE COMMANDES (MOIS)
+================================= */
+$sqlNbCmd = "
     SELECT COUNT(*) AS total
     FROM commande
     WHERE MONTH(datCom) = MONTH(CURDATE())
       AND YEAR(datCom) = YEAR(CURDATE())
-")->fetch();
-$nbCommandes = $qCmd['total'];
+";
+$stmtCmd = $pdo->query($sqlNbCmd);
+$rowCmd = $stmtCmd->fetch(PDO::FETCH_ASSOC);
+$nbCommandes = isset($rowCmd['total']) ? $rowCmd['total'] : 0;
 
-// ✅ nombre de succursales
-$qSuc = $pdo->query("SELECT COUNT(*) AS total FROM succursale")->fetch();
-$nbSuccursales = $qSuc['total'];
+/* ===============================
+   NOMBRE DE SUCCURSALES
+================================= */
+$sqlNbSuc = "SELECT COUNT(*) AS total FROM succursale";
+$stmtSuc = $pdo->query($sqlNbSuc);
+$rowSuc = $stmtSuc->fetch(PDO::FETCH_ASSOC);
+$nbSuccursales = isset($rowSuc['total']) ? $rowSuc['total'] : 0;
 
 
-// Ventes par mois (année en cours)
+/* =====================================================
+   CARTES – VENTES JOURNALIÈRES (USD / CDF)
+===================================================== */
+$qJour = $pdo->query("
+    SELECT 
+        SUM(CASE WHEN fp.unitMon = 'USD' THEN fp.pu * dc.Qte ELSE 0 END) AS total_usd,
+        SUM(CASE WHEN fp.unitMon = 'CDF' THEN fp.pu * dc.Qte ELSE 0 END) AS total_cdf
+    FROM commande c
+    INNER JOIN detailscommande dc ON c.idCom = dc.idcom
+    INNER JOIN approvisionnement a ON dc.idApprov = a.idAprov
+    INNER JOIN fixationprix fp ON a.idAprov = fp.IdApprov
+    WHERE DATE(c.datCom) = CURDATE()
+");
+$rowJour = $qJour->fetch(PDO::FETCH_ASSOC);
+
+$ventesJourUSD = isset($rowJour['total_usd']) ? $rowJour['total_usd'] : 0;
+$ventesJourCDF = isset($rowJour['total_cdf']) ? $rowJour['total_cdf'] : 0;
+
+
+/* =====================================================
+   CARTES – VENTES MENSUELLES (USD / CDF)
+===================================================== */
+$qMois = $pdo->query("
+    SELECT 
+        SUM(CASE WHEN fp.unitMon = 'USD' THEN fp.pu * dc.Qte ELSE 0 END) AS total_usd,
+        SUM(CASE WHEN fp.unitMon = 'CDF' THEN fp.pu * dc.Qte ELSE 0 END) AS total_cdf
+    FROM commande c
+    INNER JOIN detailscommande dc ON c.idCom = dc.idcom
+    INNER JOIN approvisionnement a ON dc.idApprov = a.idAprov
+    INNER JOIN fixationprix fp ON a.idAprov = fp.IdApprov
+    WHERE MONTH(c.datCom) = MONTH(CURDATE())
+      AND YEAR(c.datCom) = YEAR(CURDATE())
+");
+$rowMois = $qMois->fetch(PDO::FETCH_ASSOC);
+
+$ventesMoisUSD = isset($rowMois['total_usd']) ? $rowMois['total_usd'] : 0;
+$ventesMoisCDF = isset($rowMois['total_cdf']) ? $rowMois['total_cdf'] : 0;
+
+
+/* =====================================================
+   GRAPHIQUE 1 – ÉVOLUTION DES VENTES (GLOBAL)
+===================================================== */
 $sqlVentesMois = "
     SELECT 
         MONTH(c.datCom) AS mois,
-        COALESCE(SUM(fp.pu * dc.Qte), 0) AS total
+        SUM(fp.pu * dc.Qte) AS total
     FROM commande c
     INNER JOIN detailscommande dc ON c.idCom = dc.idcom
     INNER JOIN approvisionnement a ON dc.idApprov = a.idAprov
@@ -64,10 +88,9 @@ $sqlVentesMois = "
 ";
 $resVentes = $pdo->query($sqlVentesMois)->fetchAll(PDO::FETCH_ASSOC);
 
-$labelsMois = [];
-$dataVentes = [];
-
-$moisNoms = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"];
+$labelsMois = array();
+$dataVentes = array();
+$moisNoms = array("Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc");
 
 foreach ($resVentes as $row) {
     $labelsMois[] = $moisNoms[$row['mois'] - 1];
@@ -75,10 +98,13 @@ foreach ($resVentes as $row) {
 }
 
 
+/* =====================================================
+   GRAPHIQUE 2 – SOURCES DE REVENUS PAR SUCCURSALE
+===================================================== */
 $sqlSucc = "
     SELECT 
         s.nomSuc,
-        COALESCE(SUM(fp.pu * dc.Qte), 0) AS total
+        SUM(fp.pu * dc.Qte) AS total
     FROM succursale s
     INNER JOIN commande c ON s.idsuc = c.idSuc
     INNER JOIN detailscommande dc ON c.idCom = dc.idcom
@@ -88,16 +114,15 @@ $sqlSucc = "
 ";
 $resSucc = $pdo->query($sqlSucc)->fetchAll(PDO::FETCH_ASSOC);
 
-$labelsSucc = [];
-$dataSucc = [];
+$labelsSucc = array();
+$dataSucc = array();
 
 foreach ($resSucc as $row) {
     $labelsSucc[] = $row['nomSuc'];
     $dataSucc[]   = $row['total'];
 }
-
-
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -162,47 +187,65 @@ foreach ($resSucc as $row) {
                     <!-- Content Row -->
                     <div class="row">
 
-                        <!-- Earnings (Monthly) Card Example -->
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-primary shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                               Ventes journalières</div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                        <?= number_format($ventesJour, 0, ',', ' ') ?> CDF
-                                        </div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                       <!-- Ventes journalières -->
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
 
-                        <!-- Earnings (Monthly) Card Example -->
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-success shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                                Ventes mensuelles</div>
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        Ventes journalières
+                    </div>
 
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                            <?= number_format($ventesMois, 0, ',', ' ') ?> CDF
-                                        </div>
+                    <!-- USD -->
+                    <div class="h5 mb-1 font-weight-bold text-gray-800">
+                        <?= number_format($ventesJourUSD, 2, ',', ' ') ?> USD
+                    </div>
 
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- CDF -->
+                    <div class="text-sm text-muted">
+                        <?= number_format($ventesJourCDF, 0, ',', ' ') ?> CDF
+                    </div>
+
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ventes mensuelles -->
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-success shadow h-100 py-2">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                        Ventes mensuelles
+                    </div>
+
+                    <!-- USD -->
+                    <div class="h5 mb-1 font-weight-bold text-gray-800">
+                        <?= number_format($ventesMoisUSD, 2, ',', ' ') ?> USD
+                    </div>
+
+                    <!-- CDF -->
+                    <div class="text-sm text-muted">
+                        <?= number_format($ventesMoisCDF, 0, ',', ' ') ?> CDF
+                    </div>
+
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
                        <!-- Nombre des commandes mensuelles -->
                 <div class="col-xl-3 col-md-6 mb-4">
@@ -409,7 +452,7 @@ foreach ($resSucc as $row) {
     <script src="js/demo/chart-area-demo.js"></script>
     <script src="js/demo/chart-pie-demo.js"></script>-->
 
-    <script>
+<script>
 const areaCtx = document.getElementById("myAreaChart").getContext("2d");
 
 new Chart(areaCtx, {
@@ -420,19 +463,39 @@ new Chart(areaCtx, {
             label: "Ventes mensuelles",
             data: <?= json_encode($dataVentes) ?>,
             borderColor: "#4e73df",
-            backgroundColor: "rgba(78, 115, 223, 0.1)",
-            tension: 0.3,
-            fill: true
+            backgroundColor: "rgba(78, 115, 223, 0.15)",
+            tension: 0.4,
+            fill: true,
+
+            /* ✅ Mettre en valeur un seul point */
+            pointRadius: 6,
+            pointBackgroundColor: "#4e73df",
+            pointHoverRadius: 8
         }]
     },
     options: {
         responsive: true,
+        maintainAspectRatio: false,
+
         plugins: {
             legend: { display: false }
         },
+
         scales: {
             y: {
-                beginAtZero: true
+                beginAtZero: true,   // ✅ essentiel
+                grace: "15%",       // ✅ espace au-dessus du point
+
+                ticks: {
+                    callback: function (value) {
+                        return value.toLocaleString(); // format lisible
+                    }
+                }
+            },
+            x: {
+                ticks: {
+                    maxRotation: 0
+                }
             }
         }
     }
@@ -468,7 +531,6 @@ new Chart(pieCtx, {
     }
 });
 </script>
-``
 
 </body>
 

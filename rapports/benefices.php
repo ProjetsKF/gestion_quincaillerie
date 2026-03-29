@@ -1,5 +1,4 @@
 <?php
-
 session_start();
 require_once '../bd/database.php';
 require_once '../auth_admin.php';
@@ -27,21 +26,18 @@ $date_debut = isset($_GET['date_debut']) ? $_GET['date_debut'] : '';
 $date_fin   = isset($_GET['date_fin']) ? $_GET['date_fin'] : '';
 $produit    = isset($_GET['produit']) ? $_GET['produit'] : '';
 
-/* date */
 if (!empty($date_debut) && !empty($date_fin)) {
-    $where[] = "dc.dateCom BETWEEN :date_debut AND :date_fin";
+    $where[] = "c.datCom BETWEEN :date_debut AND :date_fin";
     $params[':date_debut'] = $date_debut;
     $params[':date_fin']   = $date_fin;
 }
 
-/* produit */
 if (!empty($produit)) {
     $where[] = "p.designP LIKE :produit";
     $params[':produit'] = "%$produit%";
 }
 
-/* WHERE */
-if (count($where) > 0) {
+if (!empty($where)) {
     $whereSql = "WHERE " . implode(" AND ", $where);
 }
 
@@ -49,99 +45,86 @@ if (count($where) > 0) {
    PAGINATION
 ================================= */
 $limit = 25;
-
-$page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
-
 $offset = ($page - 1) * $limit;
 
 /* ===============================
    TOTAL LIGNES
 ================================= */
-$sqlCount = "SELECT COUNT(*) 
-             FROM detailscommande dc
-             JOIN produit p ON dc.idProd = p.idprod
-             $whereSql";
-
+$sqlCount = "
+    SELECT COUNT(*) 
+    FROM detailscommande dc
+    JOIN commande c ON dc.idCom = c.idCom
+    JOIN produit p ON dc.idprod = p.idprod
+    $whereSql
+";
 $stmtCount = $pdo->prepare($sqlCount);
-
-foreach ($params as $key => $value) {
-    $stmtCount->bindValue($key, $value);
+foreach ($params as $k => $v) {
+    $stmtCount->bindValue($k, $v);
 }
-
 $stmtCount->execute();
-$totalRows = $stmtCount->fetchColumn();
+$totalRows  = $stmtCount->fetchColumn();
 $totalPages = ceil($totalRows / $limit);
 
 /* ===============================
    REQUÊTE PRINCIPALE
 ================================= */
-$sql = "SELECT 
-            p.designP,
-            dc.Qte,
+$sql = "
+    SELECT 
+        p.designP,
+        dc.Qte,
+        fp.unitMon,
+        COALESCE(fp.pu, 0) AS prix_vente,
+        COALESCE(a.pu, 0) AS prix_achat,
+        (COALESCE(fp.pu, 0) - COALESCE(a.pu, 0)) * dc.Qte AS benefice,
+        c.datCom AS dateCom
+    FROM detailscommande dc
+    JOIN commande c ON dc.idcom = c.idCom
+    JOIN produit p ON dc.idprod = p.idprod
 
-            COALESCE(fp.pu, 0) AS prix_vente,
-            COALESCE(a.pu, 0) AS prix_achat,
+    LEFT JOIN (
+        SELECT idProd, MAX(datAprov) AS lastDate
+        FROM approvisionnement
+        GROUP BY idProd
+    ) lastA ON lastA.idProd = dc.idprod
 
-            (COALESCE(fp.pu, 0) - COALESCE(a.pu, 0)) * dc.Qte AS benefice,
+    LEFT JOIN approvisionnement a 
+        ON a.idProd = lastA.idProd 
+        AND a.datAprov = lastA.lastDate
 
-            c.datCom AS dateCom
+    LEFT JOIN fixationprix fp 
+        ON fp.idApprov = a.idAprov
 
-        FROM detailscommande dc
-
-        JOIN commande c ON dc.idcom = c.idCom
-        JOIN produit p ON dc.idprod = p.idprod
-
-        /* dernier approvisionnement */
-        LEFT JOIN (
-            SELECT idProd, MAX(datAprov) AS lastDate
-            FROM approvisionnement
-            GROUP BY idProd
-        ) lastA 
-            ON lastA.idProd = dc.idprod
-
-        LEFT JOIN approvisionnement a 
-            ON a.idProd = lastA.idProd 
-            AND a.datAprov = lastA.lastDate
-
-        /* prix de vente */
-        LEFT JOIN fixationprix fp 
-            ON fp.idApprov = a.idAprov
-
-        $whereSql
-
-        ORDER BY c.datCom DESC
-
-        LIMIT :limit OFFSET :offset";
+    $whereSql
+    ORDER BY c.datCom DESC
+    LIMIT :limit OFFSET :offset
+";
 
 $stmt = $pdo->prepare($sql);
-
-/* bind filtres */
-foreach ($params as $key => $value) {
-    $stmt->bindValue($key, $value);
+foreach ($params as $k => $v) {
+    $stmt->bindValue($k, $v);
 }
-
-/* pagination */
-$stmt->bindValue(':limit',  (int)$limit,  PDO::PARAM_INT);
-$stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 
-$data = $stmt->fetchAll();
+$data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 /* ===============================
-   INDICATEURS
+   INDICATEURS – BÉNÉFICES
 ================================= */
-
-$totalBenefice = 0;
+$totalBeneficeUSD = 0;
+$totalBeneficeCDF = 0;
 $totalVentes = count($data);
 
-if (!empty($data)) {
-    foreach ($data as $d) {
-        $totalBenefice += $d['benefice'];
+foreach ($data as $d) {
+    if ($d['unitMon'] === 'USD') {
+        $totalBeneficeUSD += $d['benefice'];
+    } elseif ($d['unitMon'] === 'CDF') {
+        $totalBeneficeCDF += $d['benefice'];
     }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -181,15 +164,27 @@ if (!empty($data)) {
     <!-- INDICATEURS -->
     <div class="row">
 
-        <div class="col-md-6 mb-3">
-            <div class="card text-white shadow"
-                 style="background: linear-gradient(45deg,#1cc88a,#17a673); border-radius:10px;">
-                <div class="card-body">
-                    <div class="small">Bénéfice total</div>
-                    <h4><?php echo number_format($totalBenefice,0,',',' '); ?></h4>
-                </div>
+     <div class="col-md-6 mb-3">
+    <div class="card text-white shadow"
+         style="background: linear-gradient(45deg,#1cc88a,#17a673); border-radius:10px;">
+        <div class="card-body">
+
+            <div class="small">Bénéfice total</div>
+
+            <!-- USD (principal) -->
+            <h4 class="mb-1 font-weight-bold">
+                <?= number_format($totalBeneficeUSD, 2, ',', ' ') ?> USD
+            </h4>
+
+            <!-- CDF (secondaire mais VISIBLE) -->
+            <div class="mt-1 font-weight-semibold"
+                 style="color: #eafff5; font-size: 16px;">
+                <?= number_format($totalBeneficeCDF, 0, ',', ' ') ?> CDF
             </div>
+
         </div>
+    </div>
+</div>
 
         <div class="col-md-6 mb-3">
             <div class="card text-white shadow"
