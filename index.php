@@ -81,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['role'] = $user['rol'];
                 $_SESSION['idsuc'] = $user['idSuc'];
+                
 
                 logActivity(
                     $pdo,

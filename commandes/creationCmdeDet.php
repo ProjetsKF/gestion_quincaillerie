@@ -26,11 +26,12 @@ $somFact->execute([
 
 $som = $somFact->fetchAll(PDO::FETCH_ASSOC);
 
-$sqlCom = "SELECT designP,caractProduit,seuil_min,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as Stock FROM produit p LEFT JOIN (SELECT idprod,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod)a On p.idprod=a.idProd LEFT join (SELECT idprod,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod)c ON p.idprod=c.idprod where CONCAT(designP,' ',caractProduit)=:designP";
+$sqlCom = "SELECT designP,caractProduit,seuil_min,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as Stock FROM produit p LEFT JOIN (SELECT idprod,idAprov,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod,idAprov)a On p.idprod=a.idProd LEFT join (SELECT idprod,idApprov,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod,idApprov)c ON a.idAprov= c.idApprov where CONCAT(designP,' ',caractProduit)=:designP AND a.idAprov=:idAprov";
 
 $verQte= $pdo->prepare($sqlCom);
 $verQte->execute([
-    ':designP'       =>$_GET['prod']
+    ':designP'       =>$_GET['prod'],
+    ':idAprov'       => $_GET['idApp']
 ]);
 
 $ver = $verQte->fetchAll(PDO::FETCH_ASSOC);
@@ -45,10 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     if ($Qte && $unitMes) {
-        $checkStock = "SELECT designP,caractProduit,seuil_min,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as Stock FROM produit p LEFT JOIN (SELECT idprod,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod)a On p.idprod=a.idProd LEFT join (SELECT idprod,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod)c ON p.idprod=c.idprod where CONCAT(designP,' ',caractProduit)=:designP  AND COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0)<$Qte";
+        $checkStock = "SELECT designP,caractProduit,seuil_min,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as Stock FROM produit p LEFT JOIN (SELECT idprod,idAprov,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod,idAprov)a On p.idprod=a.idProd LEFT join (SELECT idprod,idApprov,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod,idApprov)c ON a.idAprov= c.idApprov where CONCAT(designP,' ',caractProduit)=:designP AND a.idAprov=:idAprov  AND COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0)<$Qte";
         $checkStmt = $pdo->prepare($checkStock);
         $checkStmt->execute([
-            ':designP' => $_GET['prod']
+            ':designP' => $_GET['prod'],
+            ':idAprov' => $_GET['idApp']
         ]);
 
         if ($checkStmt->fetch()) {

@@ -29,11 +29,13 @@ $sucStmt = $pdo->prepare("
     SELECT 
         idsuc,
         nomSuc
-    FROM succursale
+    FROM succursale WHERE idsuc=:idsuc
     ORDER BY nomSuc ASC
 ");
 
-$sucStmt->execute();
+$sucStmt->execute([
+    ':idsuc' => $_SESSION['idsuc']
+]);
 $succursales = $sucStmt->fetchAll();
 
 
@@ -541,7 +543,7 @@ $showingTo = min(
                     <div class="form-group">
                         <label>Succursale *</label>
                         <select name="idSuc" class="form-control" required>
-                            <option value="">-- Sélectionner une succursale --</option>
+                            
                             <?php foreach ($succursales as $s): ?>
                                 <option value="<?php echo $s['idsuc']; ?>">
                                     <?php echo htmlspecialchars($s['nomSuc']); ?>

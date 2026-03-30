@@ -52,13 +52,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 /* ===============================
    AFFICHAGE DES PRODUITS
 ================================= */
-
-$sql = "SELECT Produit.idprod,designP,caractProduit,fixationprix.pu,fixationprix.unitMon,approvisionnement.unitMes,approvisionnement.idAprov FROM produit INNER join approvisionnement on produit.idprod=approvisionnement.idProd inner join fixationprix on approvisionnement.idAprov=fixationprix.IdApprov LIMIT 5";
+/*
+$sql = "SELECT Produit.idprod,designP,caractProduit,fixationprix.pu,fixationprix.unitMon,approvisionnement.unitMes,approvisionnement.idAprov FROM produit INNER join approvisionnement on produit.idprod=approvisionnement.idProd inner join fixationprix on approvisionnement.idAprov=fixationprix.IdApprov WHERE idsuc=:idsuc LIMIT 5";
+*/
+$sql = "SELECT *from(SELECT p.idprod,designP,caractProduit,seuil_min,a.unitMes,pu,unitMon,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as Stock,a.idAprov,a.idSuc FROM produit p LEFT JOIN (SELECT idprod,idAprov,unitMes,idSuc,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod,idAprov)a On p.idprod=a.idProd LEFT join (SELECT idprod,idApprov,unitMes,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod,idApprov)c ON a.idAprov= c.idApprov LEFT JOIN (SELECT idApprov,pu,unitMon from fixationprix GROUP by idApprov)f on a.idAprov=f.idApprov)rqt WHERE stock>0 AND idAprov in(select idApprov from fixationPrix) AND idsuc=:idsuc LIMIT 5";
 
 $res = $pdo->prepare($sql);
-$res->execute();
+$res->execute([
+    ':idsuc' => $_SESSION['idsuc']
+]);
 
 $prod = $res->fetchAll();
+
+$compteur=0;
 
 ?>
 
@@ -170,16 +176,20 @@ $prod = $res->fetchAll();
                             <th>ID</th>
                             <th>Désignation</th>
                             <th>Caractéristiques</th>
+                            <th>Stock disponible</th>
+                            <th>Prix unitaire</th>
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        <?php foreach ($prod as $pr) : ?>
+                        <?php foreach ($prod as $pr) : $compteur++; ?>
                         <tr>
-                            <td><?= htmlspecialchars($pr['idprod']) ?></td>
+                            <td><?= $compteur ?></td>
                             <td><?= htmlspecialchars($pr['designP']) ?></td>
                             <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
+                            <td><?= htmlspecialchars($pr['Stock'].' '.$pr['unitMes']) ?></td>
+                            <td><?= htmlspecialchars($pr['pu'].' '.$pr['unitMon']) ?></td>
                             <td class="text-center">
 
                                 
