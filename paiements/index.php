@@ -1,7 +1,17 @@
 <?php
-
 session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit;
+}
+?>
+
+<?php
+
 require_once '../bd/database.php';
+
+
 
 /* ===============================
    RECHERCHE
@@ -63,12 +73,12 @@ $totalPages = ceil($totalRecords / $limit);
    RECUPERATION DES COMMANDES
 ================================= */
 
-$sql = "SELECT DISTINCT *,SUM(PT)as PrixT from (SELECT c.idCom,c.datCom,cl.nom,cl.postnom,cl.prenom,cl.raisSoc,cl.tel,s.nomSuc,s.comm,p.designP,p.caractProduit,d.Qte,d.unitMes,f.pu,f.unitMon, f.pu*d.Qte as PT FROM Commande c INNER JOIN client cl on c.idClt=cl.idclt INNER JOIN succursale s ON c.idSuc=s.idsuc INNER JOIN detailscommande d ON c.idCom=d.idcom INNER JOIN produit p on d.idprod=p.idprod INNER JOIN approvisionnement a ON d.idApprov=a.idAprov INNER JOIN fixationprix f on a.idAprov=f.IdApprov)rqt GROUP BY idcom ";
+$sql = "SELECT DISTINCT *,SUM(PT)as PrixT from (SELECT c.idCom,c.datCom,cl.nom,cl.postnom,cl.prenom,cl.raisSoc,cl.tel,s.nomSuc,s.comm,p.designP,p.caractProduit,d.Qte,d.unitMes,f.pu,f.unitMon, f.pu*d.Qte as PT,s.idsuc FROM Commande c INNER JOIN client cl on c.idClt=cl.idclt INNER JOIN succursale s ON c.idSuc=s.idsuc INNER JOIN detailscommande d ON c.idCom=d.idcom INNER JOIN produit p on d.idprod=p.idprod INNER JOIN approvisionnement a ON d.idApprov=a.idAprov INNER JOIN fixationprix f on a.idAprov=f.IdApprov)rqt  WHERE idSuc=:idsuc GROUP BY idcom ";
 
 if (!empty($search)) {
 
     $sql .= "
-        WHERE nom LIKE :search
+        nom LIKE :search
         OR postnom LIKE :search
         OR prenom LIKE :search
         OR raisSoc LIKE :search
@@ -76,6 +86,7 @@ if (!empty($search)) {
         OR datCom LIKE :search
     ";
 }
+
 
 $sql .= "
     ORDER BY idCom DESC
@@ -88,8 +99,10 @@ if (!empty($search)) {
     $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
 }
 
+
 $stmt->bindValue(':start', $start, PDO::PARAM_INT);
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->bindValue(':idsuc', $_SESSION['idsuc'], PDO::PARAM_INT);
 
 $stmt->execute();
 
