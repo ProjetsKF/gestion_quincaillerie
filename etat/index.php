@@ -41,10 +41,11 @@ $sql = "SELECT
             p.designP,
             p.caractProduit,
             p.seuil_min,
+            idsuc,
             COALESCE(a.totEntree,0) - COALESCE(c.totSortie,0) AS stock
         FROM produit p
         LEFT JOIN (
-            SELECT idProd, SUM(Qte) as totEntree
+            SELECT idProd,idsuc , SUM(Qte) as totEntree
             FROM approvisionnement
             GROUP BY idProd
         ) a ON p.idprod = a.idProd
@@ -52,13 +53,14 @@ $sql = "SELECT
             SELECT idProd, SUM(Qte) as totSortie
             FROM detailscommande
             GROUP BY idProd
-        ) c ON p.idprod = c.idProd
+        ) c ON p.idprod = c.idProd WHERE idsuc=:idsuc
         ORDER BY p.idprod DESC
         LIMIT :limit OFFSET :offset";
 
 $stmt = $pdo->prepare($sql);
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->bindValue(':idsuc', $_SESSION['idsuc'], PDO::PARAM_INT);
 $stmt->execute();
 
 $produits = $stmt->fetchAll();

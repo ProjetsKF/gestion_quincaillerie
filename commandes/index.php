@@ -137,6 +137,15 @@ $clt = $res->fetchAll();
                 Nos Clients
             </h6>
 
+
+         <button class="btn btn-primary btn-sm"
+                    data-toggle="modal"
+                    data-target="#clientModal">
+                <i class="fas fa-plus"></i> Nouveau client
+            </button>                
+
+
+
             
         </div>
 

@@ -109,7 +109,7 @@ $clt = $req->fetchAll(PDO::FETCH_ASSOC);
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
 
                 <h6 class="m-0 font-weight-bold text-primary">
-                    Gestion des Produits
+                    Nos clients
                 </h6>
 
                 <div>
@@ -118,11 +118,6 @@ $clt = $req->fetchAll(PDO::FETCH_ASSOC);
                         <i class="fas fa-sync-alt"></i> Actualiser
                     </a>
 
-                    <button class="btn btn-primary btn-sm"
-                            data-toggle="modal"
-                            data-target="#produitModal">
-                        <i class="fas fa-plus"></i> Nouveau Produit
-                    </button>
 
     </div>
 

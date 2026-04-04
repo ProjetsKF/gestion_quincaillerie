@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 
 <?php
 require_once '../bd/database.php';
+require_once '../auth_admin.php';
 
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 

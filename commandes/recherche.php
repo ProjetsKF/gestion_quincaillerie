@@ -39,6 +39,7 @@ $req->execute([
 ]);
 
 $prod = $req->fetchAll(PDO::FETCH_ASSOC);
+$compteur=0;
 
 ?>
 
@@ -158,17 +159,23 @@ $prod = $req->fetchAll(PDO::FETCH_ASSOC);
                             <th>ID</th>
                             <th>Désignation</th>
                             <th>Caractéristiques</th>
+                            <th>Stock disponible</th>
+                            <th>Prix unitaire</th>
                             <th class="text-center">Actions</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        <?php foreach ($prod as $pr) : ?>
+                        <?php foreach ($prod as $pr) : $compteur++ ?>
                         <tr>
-                            <td><?= htmlspecialchars($pr['idprod']) ?></td>
+                           <td><?= $compteur ?></td>
                             <td><?= htmlspecialchars($pr['designP']) ?></td>
                             <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
+                            <td><?= htmlspecialchars($pr['Stock'].' '.$pr['unitMes']) ?></td>
+                            <td><?= htmlspecialchars($pr['pu'].' '.$pr['unitMon']) ?></td>
                             <td class="text-center">
+
+                                
                                 <a href="../commandes/creationCmdeDet.php?idclt=<?= $_GET['idclt'] ?>&idcmd=<?= $_GET['idcmd'] ?>&prod=<?= $pr['designP'].' '.$pr['caractProduit'] ?>&unitMes=<?= $pr['unitMes'] ?>&idApp=<?= $pr['idAprov'] ?>" class="btn-edit"   
                                         >
                                     <i class="fas fa-shopping-cart mr-2"></i>
