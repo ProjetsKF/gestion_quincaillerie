@@ -180,7 +180,7 @@ $alertes = $stmtAlert->fetchAll();
         </h6>
 
         <!-- Message 1 -->
-        <a class="dropdown-item d-flex align-items-center" href="messages.php">
+        <a class="dropdown-item d-flex align-items-center"  href="#">
             <div class="dropdown-list-image mr-3">
                 <img class="rounded-circle" src="img/undraw_profile.svg" alt="">
                 <div class="status-indicator bg-success"></div>
@@ -196,7 +196,7 @@ $alertes = $stmtAlert->fetchAll();
         </a>
 
         <!-- Message 2 -->
-        <a class="dropdown-item d-flex align-items-center" href="messages.php">
+        <a class="dropdown-item d-flex align-items-center"  href="#">
             <div class="dropdown-list-image mr-3">
                 <img class="rounded-circle" src="img/undraw_profile.svg" alt="">
             </div>
@@ -211,7 +211,7 @@ $alertes = $stmtAlert->fetchAll();
         </a>
 
         <!-- Message 3 -->
-        <a class="dropdown-item d-flex align-items-center" href="messages.php">
+        <a class="dropdown-item d-flex align-items-center" href="#">
             <div class="dropdown-list-image mr-3">
                 <img class="rounded-circle" src="img/undraw_profile.svg" alt="">
                 <div class="status-indicator bg-success"></div>
@@ -228,7 +228,7 @@ $alertes = $stmtAlert->fetchAll();
 
         <!-- Voir tous -->
         <a class="dropdown-item text-center small text-gray-500"
-           href="messages.php">
+               href="#">
             Voir tous les messages
         </a>
 
