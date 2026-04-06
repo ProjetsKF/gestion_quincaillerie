@@ -36,7 +36,7 @@ $totalPages = ceil($totalProducts / $limit);
 /* ===============================
    REQUÊTE STOCK
 ================================= */
-
+/*
 $sql = "SELECT 
             p.designP,
             p.caractProduit,
@@ -56,6 +56,9 @@ $sql = "SELECT
         ) c ON p.idprod = c.idProd WHERE idsuc=:idsuc
         ORDER BY p.idprod DESC
         LIMIT :limit OFFSET :offset";
+        */
+
+$sql = "SELECT *from(SELECT p.idprod,designP,caractProduit,seuil_min,a.unitMes,pu,unitMon,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as stock,a.idAprov,a.idSuc FROM produit p LEFT JOIN (SELECT idprod,idAprov,unitMes,idSuc,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod,idAprov)a On p.idprod=a.idProd LEFT join (SELECT idprod,idApprov,unitMes,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod,idApprov)c ON a.idAprov= c.idApprov LEFT JOIN (SELECT idApprov,pu,unitMon from fixationprix GROUP by idApprov)f on a.idAprov=f.idApprov)rqt WHERE stock>0 AND idAprov in(select idApprov from fixationPrix) AND idsuc=:idsuc LIMIT :limit OFFSET :offset";
 
 $stmt = $pdo->prepare($sql);
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
