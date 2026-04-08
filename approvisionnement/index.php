@@ -3,50 +3,59 @@
 session_start();
 require_once '../bd/database.php';
 
+/* =====================================================
+   SÉCURITÉ
+===================================================== */
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../index.php");
+    exit();
+}
+
+$role  = $_SESSION['role'];
+$idsuc = $_SESSION['idsuc'];
 
 /* =====================================================
-   RECUPERATION DES FOURNISSEURS (pour le modal)
+   FOURNISSEURS (pas lié à succursale → OK)
 ===================================================== */
 
 $fournStmt = $pdo->prepare("
-    SELECT 
-        id,
-        nom,
-        postnom
+    SELECT id, nom, postnom
     FROM fournisseur
     ORDER BY nom ASC
 ");
-
 $fournStmt->execute();
 $fournisseurs = $fournStmt->fetchAll();
 
-
 /* =====================================================
-   RECUPERATION DES SUCCURSALES (pour le modal)
+   SUCCURSALES
 ===================================================== */
 
-$sucStmt = $pdo->prepare("
-    SELECT 
-        idsuc,
-        nomSuc
-    FROM succursale WHERE idsuc=:idsuc
-    ORDER BY nomSuc ASC
-");
+if ($role == 1) {
+    // 👑 admin → toutes les succursales
+    $sucStmt = $pdo->query("
+        SELECT idsuc, nomSuc
+        FROM succursale
+        ORDER BY nomSuc ASC
+    ");
+    $succursales = $sucStmt->fetchAll();
 
-$sucStmt->execute([
-    ':idsuc' => $_SESSION['idsuc']
-]);
-$succursales = $sucStmt->fetchAll();
-
+} else {
+    // 👤 utilisateur → sa succursale seulement
+    $sucStmt = $pdo->prepare("
+        SELECT idsuc, nomSuc
+        FROM succursale
+        WHERE idsuc = :idsuc
+    ");
+    $sucStmt->execute([':idsuc' => $idsuc]);
+    $succursales = $sucStmt->fetchAll();
+}
 
 /* =====================================================
-   PARAMETRES DE RECHERCHE
+   RECHERCHE
 ===================================================== */
 
-$search = isset($_GET['search']) 
-    ? trim($_GET['search']) 
-    : '';
-
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 /* =====================================================
    PAGINATION
@@ -54,116 +63,120 @@ $search = isset($_GET['search'])
 
 $limit = 10;
 
-$page = isset($_GET['page']) 
-    ? (int)$_GET['page'] 
-    : 1;
-
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $page = ($page < 1) ? 1 : $page;
 
 $start = ($page - 1) * $limit;
 
-
 /* =====================================================
-   TOTAL DES PRODUITS
+   REQUÊTE PRODUITS (BASE)
 ===================================================== */
 
-if (!empty($search)) {
+$sql = "
+SELECT DISTINCT 
+    p.idprod,
+    p.designP,
+    p.caractProduit
+FROM produit p
+LEFT JOIN approvisionnement a ON p.idprod = a.idprod
+";
 
-    $countSql = "
-        SELECT COUNT(*)
-        FROM produit
-        WHERE 
-            designP LIKE :search
-            OR caractProduit LIKE :search
-    ";
+/* =====================================================
+   CONDITIONS
+===================================================== */
 
-    $stmtCount = $pdo->prepare($countSql);
+$where = [];
 
-    $stmtCount->execute([
-        ':search' => "%$search%"
-    ]);
-
-} else {
-
-    $stmtCount = $pdo->prepare("
-        SELECT COUNT(*) 
-        FROM produit
-    ");
-
-    $stmtCount->execute();
+// 🔒 Filtrage succursale (user seulement)
+if ($role != 1) {
+    $where[] = "a.idSuc = :idsuc";
 }
 
+// 🔍 Recherche
+if (!empty($search)) {
+    $where[] = "(p.designP LIKE :search OR p.caractProduit LIKE :search)";
+}
+
+// appliquer WHERE
+if (!empty($where)) {
+    $sql .= " WHERE " . implode(" AND ", $where);
+}
+
+/* =====================================================
+   TRI + PAGINATION
+===================================================== */
+
+$sql .= " ORDER BY p.designP ASC LIMIT :start, :limit";
+
+/* =====================================================
+   PRÉPARATION
+===================================================== */
+
+$stmt = $pdo->prepare($sql);
+
+// bind recherche
+if (!empty($search)) {
+    $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
+}
+
+// bind succursale
+if ($role != 1) {
+    $stmt->bindValue(':idsuc', $idsuc, PDO::PARAM_INT);
+}
+
+// pagination
+$stmt->bindValue(':start', $start, PDO::PARAM_INT);
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+
+$stmt->execute();
+$produits = $stmt->fetchAll();
+
+/* =====================================================
+   TOTAL POUR PAGINATION
+===================================================== */
+
+$countSql = "
+SELECT COUNT(DISTINCT p.idprod)
+FROM produit p
+LEFT JOIN approvisionnement a ON p.idprod = a.idprod
+";
+
+$whereCount = [];
+
+if ($role != 1) {
+    $whereCount[] = "a.idSuc = :idsuc";
+}
+
+if (!empty($search)) {
+    $whereCount[] = "(p.designP LIKE :search OR p.caractProduit LIKE :search)";
+}
+
+if (!empty($whereCount)) {
+    $countSql .= " WHERE " . implode(" AND ", $whereCount);
+}
+
+$stmtCount = $pdo->prepare($countSql);
+
+// bind pareil
+if (!empty($search)) {
+    $stmtCount->bindValue(':search', "%$search%", PDO::PARAM_STR);
+}
+
+if ($role != 1) {
+    $stmtCount->bindValue(':idsuc', $idsuc, PDO::PARAM_INT);
+}
+
+$stmtCount->execute();
 $totalRecords = $stmtCount->fetchColumn();
 
 $totalPages = ceil($totalRecords / $limit);
 
-
 /* =====================================================
-   RECUPERATION DES PRODUITS
+   INFOS AFFICHAGE
 ===================================================== */
 
-$sql = "
-    SELECT 
-        idprod,
-        designP,
-        caractProduit
-    FROM produit
-";
-
-if (!empty($search)) {
-
-    $sql .= "
-        WHERE 
-            designP LIKE :search
-            OR caractProduit LIKE :search
-    ";
-}
-
-$sql .= "
-    ORDER BY designP ASC
-    LIMIT :start, :limit
-";
-
-$stmt = $pdo->prepare($sql);
-
-if (!empty($search)) {
-
-    $stmt->bindValue(
-        ':search',
-        "%$search%",
-        PDO::PARAM_STR
-    );
-}
-
-$stmt->bindValue(
-    ':start',
-    $start,
-    PDO::PARAM_INT
-);
-
-$stmt->bindValue(
-    ':limit',
-    $limit,
-    PDO::PARAM_INT
-);
-
-$stmt->execute();
-
-$produits = $stmt->fetchAll();
-
-
-/* =====================================================
-   INFOS AFFICHAGE PAGINATION
-===================================================== */
-
-$showingFrom = ($totalRecords > 0)
-    ? $start + 1
-    : 0;
-
-$showingTo = min(
-    $start + $limit,
-    $totalRecords
-);
+$showingFrom = ($totalRecords > 0) ? $start + 1 : 0;
+$showingTo   = min($start + $limit, $totalRecords);
 
 ?>
 

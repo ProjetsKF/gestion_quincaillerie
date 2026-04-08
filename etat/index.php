@@ -1,23 +1,25 @@
 <?php
 
 session_start();
-
 require_once '../bd/database.php';
 
-/* Vérifier connexion */
+/* ===============================
+   VÉRIFICATION CONNEXION
+================================= */
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
     exit();
 }
 
+$role  = $_SESSION['role'];
+$idsuc = $_SESSION['idsuc'];
+
 /* ===============================
    PAGINATION
 ================================= */
-
 $limit = 10;
 
 $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
-
 if ($page < 1) {
     $page = 1;
 }
@@ -25,48 +27,107 @@ if ($page < 1) {
 $offset = ($page - 1) * $limit;
 
 /* ===============================
-   TOTAL PRODUITS
+   REQUÊTE PRINCIPALE
 ================================= */
 
-$countQuery = $pdo->query("SELECT COUNT(*) FROM produit");
-$totalProducts = $countQuery->fetchColumn();
+$sql = "
+SELECT * FROM (
+    SELECT 
+        p.idprod,
+        p.designP,
+        p.caractProduit,
+        p.seuil_min,
+        a.unitMes,
+        f.pu,
+        f.unitMon,
+        COALESCE(a.totEntree,0) - COALESCE(c.totSortie,0) as stock,
+        a.idAprov,
+        a.idSuc
 
-$totalPages = ceil($totalProducts / $limit);
+    FROM produit p
+
+    LEFT JOIN (
+        SELECT idprod, idAprov, unitMes, idSuc, SUM(Qte) as totEntree
+        FROM approvisionnement
+        GROUP BY idprod, idAprov
+    ) a ON p.idprod = a.idProd
+
+    LEFT JOIN (
+        SELECT idprod, idApprov, SUM(Qte) as totSortie
+        FROM detailscommande
+        GROUP BY idprod, idApprov
+    ) c ON a.idAprov = c.idApprov
+
+    LEFT JOIN (
+        SELECT idApprov, pu, unitMon
+        FROM fixationprix
+        GROUP BY idApprov
+    ) f ON a.idAprov = f.idApprov
+
+) rqt
+";
 
 /* ===============================
-   REQUÊTE STOCK
+   FILTRAGE SELON RÔLE
 ================================= */
-/*
-$sql = "SELECT 
-            p.designP,
-            p.caractProduit,
-            p.seuil_min,
-            idsuc,
-            COALESCE(a.totEntree,0) - COALESCE(c.totSortie,0) AS stock
-        FROM produit p
-        LEFT JOIN (
-            SELECT idProd,idsuc , SUM(Qte) as totEntree
-            FROM approvisionnement
-            GROUP BY idProd
-        ) a ON p.idprod = a.idProd
-        LEFT JOIN (
-            SELECT idProd, SUM(Qte) as totSortie
-            FROM detailscommande
-            GROUP BY idProd
-        ) c ON p.idprod = c.idProd WHERE idsuc=:idsuc
-        ORDER BY p.idprod DESC
-        LIMIT :limit OFFSET :offset";
-        */
 
-$sql = "SELECT *from(SELECT p.idprod,designP,caractProduit,seuil_min,a.unitMes,pu,unitMon,COALESCE(a.totEntree,0)-COALESCE(c.totSortie,0) as stock,a.idAprov,a.idSuc FROM produit p LEFT JOIN (SELECT idprod,idAprov,unitMes,idSuc,SUM(approvisionnement.Qte) as totEntree FROM approvisionnement GROUP BY idprod,idAprov)a On p.idprod=a.idProd LEFT join (SELECT idprod,idApprov,unitMes,SUM(detailscommande.Qte) as totSortie from detailscommande GROUP BY idprod,idApprov)c ON a.idAprov= c.idApprov LEFT JOIN (SELECT idApprov,pu,unitMon from fixationprix GROUP by idApprov)f on a.idAprov=f.idApprov)rqt WHERE stock>0 AND idAprov in(select idApprov from fixationPrix) AND idsuc=:idsuc LIMIT :limit OFFSET :offset";
+if ($role == 1) {
+    // 👑 ADMIN → voit tout
+    $sql .= " WHERE 1=1";
+} else {
+    // 👤 UTILISATEUR → filtré
+    $sql .= " 
+        WHERE stock > 0
+        AND idAprov IN (SELECT idApprov FROM fixationPrix)
+        AND idSuc = :idsuc
+    ";
+}
+
+/* ===============================
+   TRI + PAGINATION
+================================= */
+
+$sql .= " ORDER BY idprod DESC LIMIT :limit OFFSET :offset";
+
+/* ===============================
+   EXÉCUTION
+================================= */
 
 $stmt = $pdo->prepare($sql);
+
+// paramètres communs
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-$stmt->bindValue(':idsuc', $_SESSION['idsuc'], PDO::PARAM_INT);
-$stmt->execute();
 
+// seulement si utilisateur normal
+if ($role != 1) {
+    $stmt->bindValue(':idsuc', $idsuc, PDO::PARAM_INT);
+}
+
+$stmt->execute();
 $produits = $stmt->fetchAll();
+
+/* ===============================
+   TOTAL PRODUITS (PAGINATION)
+================================= */
+
+if ($role == 1) {
+    // admin → tous les produits
+    $countQuery = $pdo->query("SELECT COUNT(*) FROM produit");
+} else {
+    // utilisateur → seulement sa succursale
+    $countQuery = $pdo->prepare("
+        SELECT COUNT(DISTINCT p.idprod)
+        FROM produit p
+        LEFT JOIN approvisionnement a ON p.idprod = a.idprod
+        WHERE a.idSuc = :idsuc
+    ");
+    $countQuery->bindValue(':idsuc', $idsuc, PDO::PARAM_INT);
+    $countQuery->execute();
+}
+
+$totalProducts = $countQuery->fetchColumn();
+$totalPages = ceil($totalProducts / $limit);
 
 ?>
 
