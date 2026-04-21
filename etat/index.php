@@ -42,16 +42,14 @@ SELECT * FROM (
         f.unitMon,
         COALESCE(a.totEntree,0) - COALESCE(c.totSortie,0) as stock,
         a.idAprov,
-        a.idSuc
-
+        a.idSuc,
+        (Select nomSuc from succursale where idsuc=a.idSuc) as succ
     FROM produit p
-
     LEFT JOIN (
         SELECT idprod, idAprov, unitMes, idSuc, SUM(Qte) as totEntree
         FROM approvisionnement
         GROUP BY idprod, idAprov
     ) a ON p.idprod = a.idProd
-
     LEFT JOIN (
         SELECT idprod, idApprov, SUM(Qte) as totSortie
         FROM detailscommande
@@ -187,6 +185,7 @@ $totalPages = ceil($totalProducts / $limit);
                                         <th>#</th>
                                         <th>Désignation</th>
                                         <th>Caractéristiques</th>
+                                        <th>Succursale</th>
                                         <th>Stock</th>
                                         <th>Statut</th>
                                     </tr>
@@ -221,6 +220,7 @@ $totalPages = ceil($totalProducts / $limit);
                                             <td><?php echo htmlspecialchars($p['designP']); ?></td>
 
                                             <td><?php echo htmlspecialchars($p['caractProduit']); ?></td>
+                                            <td><?php echo htmlspecialchars($p['succ']); ?></td>
 
                                             <td><?php echo $stock; ?></td>
 

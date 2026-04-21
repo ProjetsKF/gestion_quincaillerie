@@ -39,6 +39,7 @@ $sql = "
         p.designP,
         p.caractProduit,
         p.seuil_min,
+        (Select nomSuc from succursale where idsuc=a.idSuc) as succ,
         COALESCE(SUM(a.Qte), 0) AS total_appro
     FROM produit p
     LEFT JOIN approvisionnement a ON p.idprod = a.idprod
@@ -57,11 +58,12 @@ $sqlCom = "
         p.designP,
         p.caractProduit,
         p.seuil_min,
+        (Select nomSuc from succursale where idsuc=a.idSuc) as succ,
         COALESCE(a.totEntree, 0) - COALESCE(c.totSortie, 0) AS Stock
     FROM produit p
 
     LEFT JOIN (
-        SELECT idprod, SUM(Qte) AS totEntree
+        SELECT idprod,idsuc, SUM(Qte) AS totEntree
         FROM approvisionnement
         GROUP BY idprod
     ) a ON p.idprod = a.idprod
@@ -304,6 +306,7 @@ $compteur = 0;
                             <th>ID</th>
                             <th>Désignation</th>
                             <th>Caractéristiques</th>
+                            <th>Succursale</th>
                             <th>Stock</th>
                             <th>Statut</th>
                             <th class="text-center">Actions</th>
@@ -335,6 +338,7 @@ $compteur = 0;
     <td><?= htmlspecialchars($compteur) ?></td>
     <td><?= htmlspecialchars($pr['designP']) ?></td>
     <td><?= htmlspecialchars($pr['caractProduit']) ?></td>
+    <td><?= htmlspecialchars($pr['succ']) ?></td>
 
     <!-- STOCK -->
     <td><?= htmlspecialchars($stock) ?></td>

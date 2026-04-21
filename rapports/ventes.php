@@ -91,7 +91,8 @@ $sql = "SELECT
             c.postnom,
             p.designP,
             pa.montant,
-            pa.unitMon
+            pa.unitMon,
+            (Select nomsuc from succursale where idsuc=co.idSuc)as succ
         FROM detailscommande dc
         INNER JOIN commande co ON dc.idcom = co.idCom
         INNER JOIN client c ON co.idClt = c.idclt
@@ -315,8 +316,9 @@ foreach ($ventes as $v) {
 
                 <thead class="thead-light">
                     <tr>
-                        <th>Produit</th>
                         <th>Client</th>
+                        <th>Succursale</th>
+                        <th>Produit</th>
                         <th>Quantité</th>
                         <th>Montant</th>
                         <th>Date</th>
@@ -329,16 +331,19 @@ foreach ($ventes as $v) {
 
                     <tr>
 
-                        <!-- PRODUIT -->
-                        <td>
-                            <i class="fas fa-box text-primary mr-2"></i>
-                            <?= htmlspecialchars($v['designP']) ?>
-                        </td>
-
                         <!-- CLIENT -->
                         <td>
                             <i class="fas fa-user text-muted mr-2"></i>
                             <?= htmlspecialchars($v['nom'] . " " . $v['postnom']) ?>
+                        </td>
+                        <td>
+                            <i class="fas fa-building text-primary mr-2"></i>
+                            <?= htmlspecialchars($v['succ']) ?>
+                        </td>
+                        <!-- PRODUIT -->
+                        <td>
+                            <i class="fas fa-box text-primary mr-2"></i>
+                            <?= htmlspecialchars($v['designP']) ?>
                         </td>
 
                         <!-- QUANTITÉ -->

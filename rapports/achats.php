@@ -88,6 +88,7 @@ $sql = "SELECT
             f.postnom,
             a.Qte,
             a.pu,
+            a.unitMes,
             a.datAprov,
             s.nomSuc
         FROM approvisionnement a
@@ -353,8 +354,8 @@ $fournPrincipal = $stmtFourn->fetch();
                                 <thead class="thead-light">
                                     <tr>
                                         <th>#</th>
-                                        <th>Produit</th>
                                         <th>Fournisseur</th>
+                                        <th>Produit</th>
                                         <th>Quantité</th>
                                         <th>Prix</th>
                                         <th>Total</th>
@@ -372,9 +373,9 @@ $fournPrincipal = $stmtFourn->fetch();
                                             <tr>
 
                                                 <td><?php echo $i++; ?></td>
-                                                <td><?php echo $a['designP']; ?></td>
                                                 <td><?php echo $a['nom']." ".$a['postnom']; ?></td>
-                                                <td><?php echo $a['Qte']; ?></td>
+                                                <td><?php echo $a['designP']; ?></td>
+                                                <td><?php echo $a['Qte'].' '.$a['unitMes']; ?></td>
                                                 <td><?php echo $a['pu']; ?></td>
                                                 <td><?php echo $a['Qte'] * $a['pu']; ?></td>
                                                 <td><?php echo $a['datAprov']; ?></td>
