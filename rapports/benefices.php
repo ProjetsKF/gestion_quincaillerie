@@ -164,7 +164,7 @@ foreach ($data as $d) {
     <!-- INDICATEURS -->
     <div class="row">
 
-     <div class="col-md-6 mb-3">
+    <div class="col-md-6 mb-3">
     <div class="card text-white shadow"
          style="background: linear-gradient(45deg,#1cc88a,#17a673); border-radius:10px;">
         <div class="card-body">
@@ -189,10 +189,18 @@ foreach ($data as $d) {
         <div class="col-md-6 mb-3">
             <div class="card text-white shadow"
                  style="background: linear-gradient(45deg,#4e73df,#224abe); border-radius:10px;">
-                <div class="card-body">
-                    <div class="small">Nombre de ventes</div>
-                    <h4><?php echo $totalVentes; ?></h4>
-                </div>
+               <div class="card-body">
+
+    <div class="small font-weight-bold">
+        Nombre de ventes
+    </div>
+
+    <h4 class="mb-0 font-weight-bold">
+        <?= isset($totalVentes) ? $totalVentes : 0; ?>
+        <small style="font-size:14px;">ventes</small>
+    </h4>
+
+</div>
             </div>
         </div>
 

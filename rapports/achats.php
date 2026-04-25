@@ -87,7 +87,8 @@ $sql = "SELECT
             f.nom,
             f.postnom,
             a.Qte,
-            a.pu,
+            fpx.pu,
+            fpx.unitMon,
             a.unitMes,
             a.datAprov,
             s.nomSuc
@@ -95,6 +96,7 @@ $sql = "SELECT
         JOIN produit p ON a.idProd = p.idprod
         JOIN fournisseur f ON a.idFourn = f.id
         JOIN succursale s ON a.idSuc = s.idsuc
+        LEFT JOIN fixationprix fpx ON a.idAprov = fpx.idApprov
         $whereSql
         ORDER BY a.datAprov DESC
         LIMIT :limit OFFSET :offset";
@@ -120,11 +122,20 @@ $achats = $stmt->fetchAll();
 ================================= */
 
 /* Total achats */
-$totalAchat = 0;
+$totalUSD = 0;
+$totalCDF = 0;
 
-if (!empty($achats)) {
-    foreach ($achats as $a) {
-        $totalAchat += $a['Qte'] * $a['pu'];
+foreach ($achats as $a) {
+
+    if (!empty($a['pu'])) {
+
+        if ($a['unitMon'] == 'USD') {
+            $totalUSD += $a['pu'] * $a['Qte'];
+        }
+
+        if ($a['unitMon'] == 'CDF') {
+            $totalCDF += $a['pu'] * $a['Qte'];
+        }
     }
 }
 
@@ -201,10 +212,19 @@ $fournPrincipal = $stmtFourn->fetch();
             <div class="card-body d-flex justify-content-between align-items-center">
 
                 <div>
-                    <div class="small">Total des achats</div>
-                    <h4 class="mb-0">
-                        <?php echo number_format($totalAchat, 0, ',', ' '); ?> 
-                    </h4>
+                    <div class="text-xs font-weight-bold">
+                        Total des achats
+                    </div>
+
+                    <!-- USD -->
+                    <div class="h5 font-weight-bold">
+                        <?= number_format($totalUSD, 0, ",", " ") ?> USD
+                    </div>
+
+                    <!-- CDF -->
+                    <div class="text-sm font-weight-bold text-white mt-1">
+                        <?= number_format($totalCDF, 0, ",", " ") ?> CDF
+                    </div>
                 </div>
 
                 <i class="fas fa-shopping-cart fa-2x"></i>
@@ -224,7 +244,7 @@ $fournPrincipal = $stmtFourn->fetch();
 
                 <div>
                     <div class="small">Nombre d'approvisionnements</div>
-                    <h4 class="mb-0"><?php echo $nbAchat; ?></h4>
+                    <h4 class="mb-0"><?php echo $nbAchat; ?> <small>entrées</small></h4> 
                 </div>
 
                 <i class="fas fa-clipboard-list fa-2x"></i>
@@ -238,27 +258,42 @@ $fournPrincipal = $stmtFourn->fetch();
     <!-- FOURNISSEUR PRINCIPAL -->
     <div class="col-md-4 mb-3">
 
-        <div class="card text-white shadow" style="background: linear-gradient(45deg, #1cc88a, #17a673); border-radius:10px;">
+       <div class="card text-white shadow" style="background: linear-gradient(45deg, #1cc88a, #17a673); border-radius:10px;">
 
-            <div class="card-body d-flex justify-content-between align-items-center">
+    <div class="card-body d-flex justify-content-between align-items-center">
 
-                <div>
-                    <div class="small">Fournisseur principal</div>
-
-                    <h5 class="mb-0">
-                        <?php 
-                        echo (isset($fournPrincipal) && isset($fournPrincipal['nom'])) 
-                            ? $fournPrincipal['nom'] 
-                            : 'N/A'; 
-                        ?>
-                    </h5>
-                </div>
-
-                <i class="fas fa-truck fa-2x"></i>
-
+        <div>
+            <div class="small">
+                Fournisseur principal
             </div>
 
+            <h5 class="mb-0 font-weight-bold">
+                <?php 
+                if (!empty($fournPrincipal) && !empty($fournPrincipal['nom'])) {
+                    echo htmlspecialchars($fournPrincipal['nom']);
+                } else {
+                    echo 'Aucun';
+                }
+                ?>
+            </h5>
+
+            <!-- Détail -->
+            <div class="small mt-1" style="opacity:0.85;">
+                <?php 
+                if (!empty($fournPrincipal) && isset($fournPrincipal['total'])) {
+                    echo $fournPrincipal['total'] . " approvisionnements";
+                } else {
+                    echo "0 approvisionnement";
+                }
+                ?>
+            </div>
         </div>
+
+        <i class="fas fa-truck fa-2x"></i>
+
+    </div>
+
+</div>
 
     </div>
 

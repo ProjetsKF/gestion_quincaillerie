@@ -148,6 +148,45 @@ foreach ($resSucc as $row) {
     <!-- Custom styles for this template-->
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
 
+    <style>
+@media print {
+
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+    }
+
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .sidebar,
+    .topbar,
+    .navbar,
+    .btn,
+    .scroll-to-top {
+        display: none !important;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+
+    #print-area, #print-area * {
+        visibility: visible;
+    }
+
+    #print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+}
+</style>
+
 </head>
 
 <body id="page-top">
@@ -166,7 +205,8 @@ foreach ($resSucc as $row) {
         <div id="content-wrapper" class="d-flex flex-column">
 
             <!-- Main Content -->
-            <div id="content">
+    <div id="content">
+        <div id="print-area">
 
                  <!-- Topbar -->
 
@@ -180,14 +220,14 @@ foreach ($resSucc as $row) {
                     <!-- Page Heading -->
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
                         <h1 class="h3 mb-0 text-gray-800">Tableau de bord</h1>
-                        <a href="#" target="_blank"
-                           class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-                           <i class="fas fa-download fa-sm text-white-50"></i> Generer rapport
+                       <a href="#" onclick="printDashboard()"
+                           class="btn btn-primary">
+                           <i class="fas fa-print"></i> Imprimer
                         </a>
-                    </div>
+                     </div>
 
                     <!-- Content Row -->
-                    <div class="row">
+        <div class="row">
 
                        <!-- Ventes journalières -->
 <div class="col-xl-3 col-md-6 mb-4">
@@ -404,8 +444,8 @@ foreach ($resSucc as $row) {
        <?php include("pieds.php"); ?>
 
         <!-- FIN PIED DE PAGE -->
-
         </div>
+    </div>
         <!-- End of Content Wrapper -->
 
     </div>
@@ -532,6 +572,36 @@ new Chart(pieCtx, {
         }
     }
 });
+</script>
+
+
+<script>
+function printDashboard() {
+
+    // récupérer les charts
+    let charts = document.querySelectorAll("canvas");
+
+    charts.forEach((canvas) => {
+        let img = document.createElement("img");
+        img.src = canvas.toDataURL("image/png");
+        img.style.width = canvas.style.width;
+        img.style.height = canvas.style.height;
+
+        canvas.parentNode.replaceChild(img, canvas);
+    });
+
+    window.print();
+
+    // recharger la page après impression (important)
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+</script>
+<script>
+function printDashboard() {
+    window.print();
+}
 </script>
 
 </body>

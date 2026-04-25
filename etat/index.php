@@ -15,6 +15,11 @@ $role  = $_SESSION['role'];
 $idsuc = $_SESSION['idsuc'];
 
 /* ===============================
+   RECHERCHE
+================================= */
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+/* ===============================
    PAGINATION
 ================================= */
 $limit = 10;
@@ -43,7 +48,7 @@ SELECT * FROM (
         COALESCE(a.totEntree,0) - COALESCE(c.totSortie,0) as stock,
         a.idAprov,
         a.idSuc,
-        (Select nomSuc from succursale where idsuc=a.idSuc) as succ
+        (SELECT nomSuc FROM succursale WHERE idsuc = a.idSuc) as succ
     FROM produit p
     LEFT JOIN (
         SELECT idprod, idAprov, unitMes, idSuc, SUM(Qte) as totEntree
@@ -55,30 +60,32 @@ SELECT * FROM (
         FROM detailscommande
         GROUP BY idprod, idApprov
     ) c ON a.idAprov = c.idApprov
-
     LEFT JOIN (
         SELECT idApprov, pu, unitMon
         FROM fixationprix
         GROUP BY idApprov
     ) f ON a.idAprov = f.idApprov
-
 ) rqt
 ";
 
 /* ===============================
-   FILTRAGE SELON RÔLE
+   FILTRAGE (RÔLE + RECHERCHE)
 ================================= */
 
-if ($role == 1) {
-    // 👑 ADMIN → voit tout
-    $sql .= " WHERE 1=1";
-} else {
-    // 👤 UTILISATEUR → filtré
-    $sql .= " 
-        WHERE stock > 0
-        AND idAprov IN (SELECT idApprov FROM fixationPrix)
-        AND idSuc = :idsuc
-    ";
+$where = [];
+
+if ($role != 1) {
+    $where[] = "stock > 0";
+    $where[] = "idAprov IN (SELECT idApprov FROM fixationPrix)";
+    $where[] = "idSuc = :idsuc";
+}
+
+if (!empty($search)) {
+    $where[] = "(designP LIKE :search OR caractProduit LIKE :search)";
+}
+
+if (!empty($where)) {
+    $sql .= " WHERE " . implode(" AND ", $where);
 }
 
 /* ===============================
@@ -93,13 +100,18 @@ $sql .= " ORDER BY idprod DESC LIMIT :limit OFFSET :offset";
 
 $stmt = $pdo->prepare($sql);
 
-// paramètres communs
+// pagination
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 
-// seulement si utilisateur normal
+// rôle
 if ($role != 1) {
     $stmt->bindValue(':idsuc', $idsuc, PDO::PARAM_INT);
+}
+
+// recherche
+if (!empty($search)) {
+    $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
 }
 
 $stmt->execute();
@@ -109,20 +121,39 @@ $produits = $stmt->fetchAll();
    TOTAL PRODUITS (PAGINATION)
 ================================= */
 
-if ($role == 1) {
-    // admin → tous les produits
-    $countQuery = $pdo->query("SELECT COUNT(*) FROM produit");
-} else {
-    // utilisateur → seulement sa succursale
-    $countQuery = $pdo->prepare("
-        SELECT COUNT(DISTINCT p.idprod)
-        FROM produit p
-        LEFT JOIN approvisionnement a ON p.idprod = a.idprod
-        WHERE a.idSuc = :idsuc
-    ");
-    $countQuery->bindValue(':idsuc', $idsuc, PDO::PARAM_INT);
-    $countQuery->execute();
+$countSql = "
+SELECT COUNT(DISTINCT p.idprod)
+FROM produit p
+LEFT JOIN approvisionnement a ON p.idprod = a.idprod
+";
+
+$whereCount = [];
+
+if ($role != 1) {
+    $whereCount[] = "a.idSuc = :idsuc";
 }
+
+if (!empty($search)) {
+    $whereCount[] = "(p.designP LIKE :search OR p.caractProduit LIKE :search)";
+}
+
+if (!empty($whereCount)) {
+    $countSql .= " WHERE " . implode(" AND ", $whereCount);
+}
+
+$countQuery = $pdo->prepare($countSql);
+
+// rôle
+if ($role != 1) {
+    $countQuery->bindValue(':idsuc', $idsuc, PDO::PARAM_INT);
+}
+
+// recherche
+if (!empty($search)) {
+    $countQuery->bindValue(':search', "%$search%", PDO::PARAM_STR);
+}
+
+$countQuery->execute();
 
 $totalProducts = $countQuery->fetchColumn();
 $totalPages = ceil($totalProducts / $limit);
@@ -166,16 +197,52 @@ $totalPages = ceil($totalProducts / $limit);
                 </h1>
 
                 <!-- Card -->
+
                 <div class="card shadow mb-4">
 
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">
-                            Liste des produits en stock
-                        </h6>
-                    </div>
-
+                  
                     <div class="card-body">
 
+<div class="card-header py-3">
+
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+
+        <!-- TITRE -->
+        <h6 class="m-0 font-weight-bold text-primary mb-2 mb-md-0">
+            Liste des produits en stock
+        </h6>
+
+        <!-- ACTIONS -->
+        <div class="d-flex align-items-center">
+
+            <!-- ACTUALISER -->
+            <a href="index.php" class="btn btn-outline-secondary mr-2 shadow-sm">
+                <i class="fas fa-sync-alt"></i>
+            </a>
+
+            <!-- RECHERCHE -->
+            <form method="GET" class="mb-0">
+                <div class="input-group" style="width: 250px;">
+
+                    <input type="text" name="search"
+                           class="form-control"
+                           placeholder="Rechercher..."
+                           value="<?php echo isset($_GET['search']) ? $_GET['search'] : ''; ?>">
+
+                    <div class="input-group-append">
+                        <button class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
                         <div class="table-responsive">
 
                             <table class="table table-hover">

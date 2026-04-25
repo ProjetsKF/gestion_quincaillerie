@@ -121,12 +121,26 @@ $ventes = $stmt->fetchAll(PDO::FETCH_ASSOC);
    STATISTIQUES
 ================================= */
 
-$totalVentes = 0;
+$totalUSD = 0;
+$totalCDF = 0;
 $totalQte = 0;
 
 foreach ($ventes as $v) {
-    $totalVentes += !empty($v['montant']) ? $v['montant'] : 0;
+
+    // quantité
     $totalQte += $v['Qte'];
+
+    // montant
+    if (!empty($v['montant'])) {
+
+        if ($v['unitMon'] == 'USD') {
+            $totalUSD += $v['montant'];
+        }
+
+        if ($v['unitMon'] == 'CDF') {
+            $totalCDF += $v['montant'];
+        }
+    }
 }
 
 ?>
@@ -179,13 +193,19 @@ foreach ($ventes as $v) {
              
             <div class="card-body d-flex justify-content-between align-items-center">
 
-                <div>
+               <div>
                     <div class="text-xs font-weight-bold">
                         Total des ventes
                     </div>
 
+                    <!-- USD -->
                     <div class="h5 font-weight-bold">
-                        <?= number_format($totalVentes, 0, ",", " ") ?>
+                        <?= number_format($totalUSD, 0, ",", " ") ?> USD
+                    </div>
+
+                    <!-- CDF -->
+                    <div class="text-sm font-weight-bold text-white mt-1">
+                        <?= number_format($totalCDF, 0, ",", " ") ?> CDF
                     </div>
                 </div>
 
@@ -208,7 +228,7 @@ foreach ($ventes as $v) {
                     </div>
 
                     <div class="h5 font-weight-bold">
-                        <?= $totalQte ?>
+                        <?= $totalQte ?> <small>articles</small>
                     </div>
                 </div>
 
@@ -231,7 +251,7 @@ foreach ($ventes as $v) {
                     </div>
 
                     <div class="h5 font-weight-bold">
-                        <?= count($ventes) ?>
+                        <?= count($ventes) ?> <small>ventes</small>
                     </div>
                 </div>
 
