@@ -74,6 +74,7 @@ $sql = "
     SELECT 
         p.designP,
         dc.Qte,
+        dc.unitMes,
         fp.unitMon,
         COALESCE(fp.pu, 0) AS prix_vente,
         COALESCE(a.pu, 0) AS prix_achat,
@@ -84,7 +85,7 @@ $sql = "
     JOIN produit p ON dc.idprod = p.idprod
 
     LEFT JOIN (
-        SELECT idProd, MAX(datAprov) AS lastDate
+        SELECT idProd, MAX(datAprov) AS lastDate,unitMes
         FROM approvisionnement
         GROUP BY idProd
     ) lastA ON lastA.idProd = dc.idprod
@@ -277,15 +278,15 @@ foreach ($data as $d) {
 
                                     <td><?php echo $i++; ?></td>
                                     <td><?php echo $d['designP']; ?></td>
-                                    <td><?php echo $d['Qte']; ?></td>
+                                    <td><?php echo $d['Qte'].' '.$d['unitMes']; ?></td>
                                     <td>
-                                        <?php echo number_format($d['prix_achat'], 2, ',', ' '); ?>
+                                        <?php echo number_format($d['prix_achat'], 2, ',', ' ').' '.$d['unitMon']; ?>
                                     </td>
-                                    <td><?php echo $d['prix_vente']; ?></td>
+                                    <td><?php echo $d['prix_vente'].' '.$d['unitMon']; ?></td>
 
                                     <td class="font-weight-bold text-success">
 
-                                        <?php echo number_format($d['benefice'],0,',',' '); ?>
+                                        <?php echo number_format($d['benefice'],0,',',' ').' '.$d['unitMon']; ?>
                                     </td>
 
                                     <td><?php echo $d['dateCom']; ?></td>
